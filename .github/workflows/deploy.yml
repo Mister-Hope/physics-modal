@@ -40,6 +40,9 @@ jobs:
       - name: Combine build outputs
         run: |
           mkdir -p dist
+          mkdir -p dist/conical-pendulum
+          mkdir -p dist/pendulum
+          mkdir -p dist/train-turn
           cp -r conical-pendulum/dist/* dist/conical-pendulum
           cp -r pendulum/dist/* dist/pendulum
           cp -r train-turn/dist/* dist/train-turn
