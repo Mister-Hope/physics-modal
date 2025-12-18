@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>单摆物理演示</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #0f172a; /* Slate 900 */
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      /* MathJax SVG Adjustment */
+      mjx-container {
+        display: inline-block !important;
+        margin: 0 !important;
+        vertical-align: middle !important;
+      }
+
+      /* Custom Scrollbar Styling */
+      /* Webkit (Chrome, Safari, Edge) */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #0f172a; /* Slate 900 - Matches body background for a 'gutter' look */
+        border-radius: 0px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background-color: #475569; /* Slate 600 */
+        border-radius: 5px;
+        border: 2px solid #0f172a; /* Creates padding effect around thumb matching track */
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: #64748b; /* Slate 500 */
+      }
+
+      ::-webkit-scrollbar-corner {
+        background-color: #0f172a;
+      }
+
+      /* Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #475569 #0f172a;
+      }
+    </style>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+        },
+        svg: {
+          fontCache: "global",
+        },
+        startup: {
+          typeset: false, // We will manage typesetting manually in React
+        },
+      };
+    </script>
+    <script
+      type="text/javascript"
+      id="MathJax-script"
+      async
+      src="/lib/mathjax/tex-svg.js"
+    ></script>
+    <link rel="stylesheet" href="/index.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

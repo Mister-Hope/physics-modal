@@ -1,0 +1,52 @@
+name: Build and Deploy
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: PNPM setup
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run build
+        run: |-
+          pnpm conical-pendulum:build
+          pnpm pendulum:build
+          pnpm train-turn:build
+
+      - name: Run linter
+        run: pnpm lint
+
+      - name: Combine build outputs
+        run: |
+          mkdir -p dist
+          cp -r conical-pendulum/dist/* dist/conical-pendulum
+          cp -r pendulum/dist/* dist/pendulum
+          cp -r train-turn/dist/* dist/train-turn
+
+      - name: Deploy docs
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: dist
+          single-commit: true

@@ -1,0 +1,39 @@
+{
+  "name": "physics-explorer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "conical-pendulum:build": "vite build conical-pendulum",
+    "conical-pendulum:dev": "vite dev conical-pendulum",
+    "conical-pendulum:preview": "vite preview conical-pendulum",
+    "pendulum:build": "vite build pendulum",
+    "pendulum:dev": "vite dev pendulum",
+    "pendulum:preview": "vite preview pendulum",
+    "train-turn:build": "vite build train-turn",
+    "train-turn:dev": "vite dev train-turn",
+    "train-turn:preview": "vite preview train-turn",
+    "lint": "eslint . --fix && prettier --check --write ."
+  },
+  "dependencies": {
+    "lucide-react": "0.555.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.18",
+    "@types/node": "25.0.3",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.2",
+    "eslint": "9.39.2",
+    "eslint-config-mister-hope": "0.9.6",
+    "mathjax": "4.1.0",
+    "prettier": "3.7.4",
+    "tailwindcss": "4.1.18",
+    "typescript": "5.9.3",
+    "vite": "7.3.0",
+    "vite-plugin-static-copy": "3.1.4"
+  },
+  "packageManager": "pnpm@10.26.0"
+}

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>火车转弯物理模型</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #0f172a; /* Slate 900 */
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      /* MathJax SVG Adjustment */
+      mjx-container {
+        display: inline-block !important;
+        margin: 0 !important;
+        vertical-align: middle !important;
+        font-size: 110% !important;
+      }
+
+      /* Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #475569 #0f172a;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        background-color: #f8fafc;
+        font-size: 16px; /* Base size */
+      }
+      /* Ensure inputs are large enough */
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 24px;
+        width: 24px;
+        border-radius: 50%;
+        background: #3b82f6;
+        cursor: pointer;
+        margin-top: -10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      }
+      input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 6px;
+        cursor: pointer;
+        background: #cbd5e1;
+        border-radius: 3px;
+      }
+    </style>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+        },
+        svg: {
+          fontCache: "global",
+        },
+        startup: {
+          typeset: false, // We will manage typesetting manually in React
+        },
+      };
+    </script>
+    <script
+      type="text/javascript"
+      id="MathJax-script"
+      async
+      src="/lib/mathjax/tex-svg.js"
+    ></script>
+    <link rel="stylesheet" href="/index.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
