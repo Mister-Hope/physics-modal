@@ -6,13 +6,13 @@
   "scripts": {
     "conical-pendulum:build": "vite build conical-pendulum",
     "conical-pendulum:dev": "vite dev conical-pendulum",
-    "conical-pendulum:preview": "vite preview conical-pendulum",
+    "conical-pendulum:preview": "vite preview --outDir conical-pendulum/dist",
     "pendulum:build": "vite build pendulum",
     "pendulum:dev": "vite dev pendulum",
-    "pendulum:preview": "vite preview pendulum",
+    "pendulum:preview": "vite preview --outDir pendulum/dist",
     "train-turn:build": "vite build train-turn",
     "train-turn:dev": "vite dev train-turn",
-    "train-turn:preview": "vite preview train-turn",
+    "train-turn:preview": "vite preview --outDir train-turn/dist",
     "lint": "eslint . --fix && prettier --check --write ."
   },
   "dependencies": {

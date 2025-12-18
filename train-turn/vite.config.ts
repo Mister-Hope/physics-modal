@@ -11,6 +11,7 @@ const require = createRequire(import.meta.url);
 const mathjaxDir = path.dirname(require.resolve("mathjax/package.json"));
 
 export default defineConfig({
+  base: "",
   server: {
     host: "0.0.0.0",
     open: true,
