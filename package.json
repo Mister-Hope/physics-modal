@@ -28,7 +28,7 @@
     "@vitejs/plugin-react": "5.1.4",
     "eslint": "9.39.3",
     "eslint-config-mister-hope": "0.9.6",
-    "mathjax": "4.1.0",
+    "mathjax": "4.1.1",
     "prettier": "3.7.4",
     "tailwindcss": "4.1.18",
     "typescript": "5.9.3",
