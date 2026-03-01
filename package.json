@@ -21,7 +21,7 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.1.18",
+    "@tailwindcss/vite": "4.2.1",
     "@types/node": "25.3.3",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
@@ -30,7 +30,7 @@
     "eslint-config-mister-hope": "0.9.6",
     "mathjax": "4.1.1",
     "prettier": "3.8.1",
-    "tailwindcss": "4.1.18",
+    "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vite": "7.3.1",
     "vite-plugin-static-copy": "3.2.0"
