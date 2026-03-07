@@ -26,7 +26,7 @@
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.4",
-    "eslint": "9.39.3",
+    "eslint": "9.39.4",
     "eslint-config-mister-hope": "0.9.6",
     "mathjax": "4.1.1",
     "prettier": "3.8.1",
