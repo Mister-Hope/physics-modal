@@ -1,11 +1,7 @@
+import { CheckCircle2, AlertTriangle, AlertOctagon, PauseCircle } from "lucide-react";
 import type { FC } from "react";
+
 import type { PhysicsResult } from "../types";
-import {
-  CheckCircle2,
-  AlertTriangle,
-  AlertOctagon,
-  PauseCircle,
-} from "lucide-react";
 
 interface StatusCardProps {
   status: PhysicsResult["status"];

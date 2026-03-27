@@ -1,39 +1,42 @@
 {
   "name": "physics-explorer",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "conical-pendulum:build": "vite build conical-pendulum",
     "conical-pendulum:dev": "vite dev conical-pendulum",
     "conical-pendulum:preview": "vite preview --outDir conical-pendulum/dist",
+    "lint": "oxlint --fix --deny-warnings --report-unused-disable-directives && oxfmt",
+    "lint:check": "oxlint --deny-warnings --report-unused-disable-directives && oxfmt --check",
     "pendulum:build": "vite build pendulum",
     "pendulum:dev": "vite dev pendulum",
     "pendulum:preview": "vite preview --outDir pendulum/dist",
     "train-turn:build": "vite build train-turn",
     "train-turn:dev": "vite dev train-turn",
-    "train-turn:preview": "vite preview --outDir train-turn/dist",
-    "lint": "eslint . --fix && prettier --check --write ."
+    "train-turn:preview": "vite preview --outDir train-turn/dist"
   },
   "dependencies": {
-    "lucide-react": "0.555.0",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "lucide-react": "1.7.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.1.18",
-    "@types/node": "25.0.3",
-    "@types/react": "19.2.7",
+    "@mr-hope/tsconfig": "0.0.3",
+    "@tailwindcss/vite": "4.2.2",
+    "@types/node": "24.12.0",
+    "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "5.1.2",
-    "eslint": "9.39.2",
-    "eslint-config-mister-hope": "0.9.6",
-    "mathjax": "4.1.0",
-    "prettier": "3.7.4",
-    "tailwindcss": "4.1.18",
-    "typescript": "5.9.3",
-    "vite": "7.3.0",
-    "vite-plugin-static-copy": "3.1.4"
+    "@vitejs/plugin-react": "6.0.1",
+    "mathjax": "4.1.1",
+    "oxc-config-hope": "0.0.11",
+    "oxfmt": "0.42.0",
+    "oxlint": "1.57.0",
+    "oxlint-tsgolint": "0.17.4",
+    "tailwindcss": "4.2.2",
+    "typescript": "6.0.2",
+    "vite": "8.0.3",
+    "vite-plugin-static-copy": "4.0.0"
   },
-  "packageManager": "pnpm@10.26.0"
+  "packageManager": "pnpm@10.33.0"
 }

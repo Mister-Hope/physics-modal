@@ -1,7 +1,8 @@
-import type { FC } from "react";
 import { Settings } from "lucide-react";
-import type { SimulationState, PhysicsResult, ForceMode } from "../types";
+import type { FC } from "react";
+
 import { Latex } from "../../components/Latex";
+import type { SimulationState, PhysicsResult, ForceMode } from "../types";
 
 interface ControlPanelProps {
   state: SimulationState;
@@ -33,11 +34,9 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
       <div className="space-y-3">
         <div className="flex justify-between items-center">
           <label className="text-base font-semibold text-slate-600 flex items-center gap-2">
-            轨道倾角 <Latex>{"$\\theta$"}</Latex>
+            轨道倾角 <Latex>{String.raw`$\theta$`}</Latex>
           </label>
-          <span className="text-blue-600 font-mono font-bold text-lg">
-            {state.angle}°
-          </span>
+          <span className="text-blue-600 font-mono font-bold text-lg">{state.angle}°</span>
         </div>
         <input
           type="range"
@@ -45,7 +44,9 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
           max="30"
           step="1"
           value={state.angle}
-          onChange={(e) => onChange({ angle: Number(e.target.value) })}
+          onChange={(e) => {
+            onChange({ angle: Number(e.target.value) });
+          }}
           className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer"
         />
         <div className="flex justify-between text-sm text-slate-500 px-1">
@@ -60,9 +61,7 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
           <label className="text-base font-semibold text-slate-600 flex items-center gap-2">
             转弯半径 <Latex>{"$r$"}</Latex>
           </label>
-          <span className="text-blue-600 font-mono font-bold text-lg">
-            {state.radius} m
-          </span>
+          <span className="text-blue-600 font-mono font-bold text-lg">{state.radius} m</span>
         </div>
         <input
           type="range"
@@ -70,7 +69,9 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
           max="4000"
           step="50"
           value={state.radius}
-          onChange={(e) => onChange({ radius: Number(e.target.value) })}
+          onChange={(e) => {
+            onChange({ radius: Number(e.target.value) });
+          }}
           className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer"
         />
         <div className="flex justify-between text-sm text-slate-500 px-1">
@@ -87,12 +88,12 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
             火车速度 <Latex>{"$v$"}</Latex>
           </label>
           <div className="text-right flex flex-col items-end">
-            <span className="text-blue-600 font-mono font-bold text-lg">
-              {velocityKmh} km/h
-            </span>
+            <span className="text-blue-600 font-mono font-bold text-lg">{velocityKmh} km/h</span>
             <span
               className="text-xs text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded cursor-pointer hover:bg-green-100 transition-colors"
-              onClick={() => handleVelocityChange(idealKmh)}
+              onClick={() => {
+                handleVelocityChange(idealKmh);
+              }}
               title="点击应用规定速度"
             >
               规定: {idealKmh.toFixed(1)} km/h
@@ -114,7 +115,9 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
             max={MAX_KMH}
             step="1"
             value={velocityKmh}
-            onChange={(e) => handleVelocityChange(Number(e.target.value))}
+            onChange={(e) => {
+              handleVelocityChange(Number(e.target.value));
+            }}
             className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer relative z-10"
             style={{ background: "transparent", boxShadow: "none" }}
           />
@@ -130,9 +133,7 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
       <div className="bg-slate-50 p-4 rounded-lg space-y-4 border border-slate-100">
         {/* Force Analysis Segmented Control */}
         <div className="space-y-2">
-          <label className="text-base font-medium text-slate-700 block">
-            受力分析模式
-          </label>
+          <label className="text-base font-medium text-slate-700 block">受力分析模式</label>
           <div className="flex bg-slate-200 p-1 rounded-lg">
             {(["none", "real", "concurrent"] as ForceMode[]).map((mode) => {
               const labels = {
@@ -145,7 +146,9 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
               return (
                 <button
                   key={mode}
-                  onClick={() => onChange({ forceMode: mode })}
+                  onClick={() => {
+                    onChange({ forceMode: mode });
+                  }}
                   className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
                     isActive
                       ? "bg-white text-blue-600 shadow-sm"
@@ -161,11 +164,11 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
 
         {/* Plane Toggle Switch */}
         <div className="flex items-center justify-between">
-          <label className="text-base font-medium text-slate-700">
-            显示圆周运动平面
-          </label>
+          <label className="text-base font-medium text-slate-700">显示圆周运动平面</label>
           <button
-            onClick={() => onChange({ showPlane: !state.showPlane })}
+            onClick={() => {
+              onChange({ showPlane: !state.showPlane });
+            }}
             className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               state.showPlane ? "bg-blue-600" : "bg-slate-300"
             }`}
@@ -222,11 +225,7 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
       {/* Footer */}
       <div className="mt-auto pt-4 text-xs text-slate-500 text-center">
         制作者：
-        <a
-          href="https://github.com/mister-hope"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="https://github.com/mister-hope" target="_blank" rel="noopener noreferrer">
           Mister Hope
         </a>
       </div>

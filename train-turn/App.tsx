@@ -1,10 +1,11 @@
 import type { FC } from "react";
 import { useState, useMemo } from "react";
-import type { SimulationState } from "./types";
-import { calculatePhysics } from "./utils/physics";
+
 import ControlPanel from "./components/ControlPanel";
 import SimulationCanvas from "./components/SimulationCanvas";
 import StatusCard from "./components/StatusCard";
+import type { SimulationState } from "./types";
+import { calculatePhysics } from "./utils/physics";
 
 const App: FC = () => {
   const [state, setState] = useState<SimulationState>({
@@ -16,9 +17,10 @@ const App: FC = () => {
     showPlane: false, // Default to off
   });
 
-  const physics = useMemo(() => {
-    return calculatePhysics(state.velocity, state.angle, state.radius);
-  }, [state.velocity, state.angle, state.radius]);
+  const physics = useMemo(
+    () => calculatePhysics(state.velocity, state.angle, state.radius),
+    [state.velocity, state.angle, state.radius],
+  );
 
   const handleStateChange = (newState: Partial<SimulationState>): void => {
     setState((prev) => ({ ...prev, ...newState }));
@@ -43,11 +45,7 @@ const App: FC = () => {
 
           {/* Control Panel Section (Scrollable) */}
           <div className="flex-1 min-h-0">
-            <ControlPanel
-              state={state}
-              physics={physics}
-              onChange={handleStateChange}
-            />
+            <ControlPanel state={state} physics={physics} onChange={handleStateChange} />
           </div>
         </div>
 

@@ -31,9 +31,7 @@ export const calculatePhysics = (
 
   const centripetalAccel = (velocity * velocity) / radius;
 
-  const normalForce =
-    TRAIN_MASS *
-    (G * Math.cos(angleRad) + centripetalAccel * Math.sin(angleRad));
+  const normalForce = TRAIN_MASS * (G * Math.cos(angleRad) + centripetalAccel * Math.sin(angleRad));
 
   // Parallel: G_parallel + F_flange = m * a_parallel
   // mg*sin(theta) + F_flange = m * (v^2 / r) * cos(theta)
@@ -43,9 +41,7 @@ export const calculatePhysics = (
   // Positive F_flange => Force points INWARD (down slope) => Outer rail pushes IN => Squeezing Outer Rail.
   // Negative F_flange => Force points OUTWARD (up slope) => Inner rail pushes OUT => Squeezing Inner Rail.
 
-  const flangeForce =
-    TRAIN_MASS *
-    (centripetalAccel * Math.cos(angleRad) - G * Math.sin(angleRad));
+  const flangeForce = TRAIN_MASS * (centripetalAccel * Math.cos(angleRad) - G * Math.sin(angleRad));
 
   const gravity = TRAIN_MASS * G;
   const netForce = TRAIN_MASS * centripetalAccel;
@@ -56,15 +52,10 @@ export const calculatePhysics = (
   // Use a small epsilon for "perfect" floating point comparison
   const epsilon = 0.5;
 
-  if (velocity === 0) {
-    status = "stopped";
-  } else if (Math.abs(velocity - idealVelocity) < epsilon) {
-    status = "perfect";
-  } else if (velocity > idealVelocity) {
-    status = "fast";
-  } else {
-    status = "slow";
-  }
+  if (velocity === 0) status = "stopped";
+  else if (Math.abs(velocity - idealVelocity) < epsilon) status = "perfect";
+  else if (velocity > idealVelocity) status = "fast";
+  else status = "slow";
 
   return {
     idealVelocity,

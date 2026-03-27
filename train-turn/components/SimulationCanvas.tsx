@@ -1,5 +1,6 @@
 import type { FC } from "react";
 import { useRef, useEffect } from "react";
+
 import type { SimulationState, PhysicsResult } from "../types";
 
 interface SimulationCanvasProps {
@@ -26,8 +27,8 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
 
-    const width = rect.width;
-    const height = rect.height;
+    const { width } = rect;
+    const { height } = rect;
 
     ctx.clearRect(0, 0, width, height);
 
@@ -149,59 +150,19 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
       ctx.fillStyle = "#475569";
 
       if (isLeft) {
-        ctx.fillRect(
-          cx - wheelTreadWidth / 2,
-          treadTop,
-          wheelTreadWidth,
-          treadBottom - treadTop,
-        );
-        ctx.strokeRect(
-          cx - wheelTreadWidth / 2,
-          treadTop,
-          wheelTreadWidth,
-          treadBottom - treadTop,
-        );
+        ctx.fillRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
+        ctx.strokeRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
         const flangeX = cx + 10;
 
-        ctx.fillRect(
-          flangeX,
-          flangeTop,
-          wheelFlangeWidth,
-          flangeBottom - flangeTop,
-        );
-        ctx.strokeRect(
-          flangeX,
-          flangeTop,
-          wheelFlangeWidth,
-          flangeBottom - flangeTop,
-        );
+        ctx.fillRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
+        ctx.strokeRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
       } else {
-        ctx.fillRect(
-          cx - wheelTreadWidth / 2,
-          treadTop,
-          wheelTreadWidth,
-          treadBottom - treadTop,
-        );
-        ctx.strokeRect(
-          cx - wheelTreadWidth / 2,
-          treadTop,
-          wheelTreadWidth,
-          treadBottom - treadTop,
-        );
+        ctx.fillRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
+        ctx.strokeRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
         const flangeX = cx - 10 - wheelFlangeWidth;
 
-        ctx.fillRect(
-          flangeX,
-          flangeTop,
-          wheelFlangeWidth,
-          flangeBottom - flangeTop,
-        );
-        ctx.strokeRect(
-          flangeX,
-          flangeTop,
-          wheelFlangeWidth,
-          flangeBottom - flangeTop,
-        );
+        ctx.fillRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
+        ctx.strokeRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
       }
     };
 
@@ -331,19 +292,13 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
         let fOriginY = comY;
         let fVecX = 0;
 
-        if (fNewtons > 0) {
-          fVecX = -fMag;
-        } else {
-          fVecX = fMag;
-        }
+        if (fNewtons > 0) fVecX = -fMag;
+        else fVecX = fMag;
 
         if (!isConcurrent) {
           fOriginY = axleCenterY;
-          if (fNewtons > 0) {
-            fOriginX = trackWidth;
-          } else {
-            fOriginX = 0;
-          }
+          if (fNewtons > 0) fOriginX = trackWidth;
+          else fOriginX = 0;
         } else {
           fOriginX = comX;
           fOriginY = comY;

@@ -1,6 +1,7 @@
 import type { FC, ReactElement } from "react";
-import type { SimulationState, PhysicsParams } from "../types";
+
 import { GRAVITY, COLORS } from "../constants";
+import type { SimulationState, PhysicsParams } from "../types";
 import { Latex } from "./Latex";
 
 interface DataDisplayProps {
@@ -35,9 +36,7 @@ const Row = ({
       <span className="text-slate-300 text-lg">{label}</span>
     </div>
     <div className="text-right">
-      <span
-        className={`text-2xl font-mono font-bold ${colorClass ?? "text-slate-100"}`}
-      >
+      <span className={`text-2xl font-mono font-bold ${colorClass ?? "text-slate-100"}`}>
         {value.toFixed(digits)}
       </span>
       <span className="text-slate-500 ml-2 text-lg">{unit}</span>
@@ -47,11 +46,7 @@ const Row = ({
 
 // Helper: Calculate Exact Period using Arithmetic-Geometric Mean (AGM)
 // This solves the Complete Elliptic Integral of the First Kind K(k)
-const calculateExactPeriod = (
-  length: number,
-  gravity: number,
-  maxAngleDeg: number,
-): number => {
+const calculateExactPeriod = (length: number, gravity: number, maxAngleDeg: number): number => {
   // If angle is 0, return small angle approximation limit
   if (maxAngleDeg === 0) return 2 * Math.PI * Math.sqrt(length / gravity);
 
@@ -82,11 +77,7 @@ export const DataDisplay: FC<DataDisplayProps> = ({ state, params }) => {
   // Calculations
 
   // Use Exact Period formula instead of Small Angle Approximation
-  const period = calculateExactPeriod(
-    params.length,
-    GRAVITY,
-    params.initialAngle,
-  );
+  const period = calculateExactPeriod(params.length, GRAVITY, params.initialAngle);
 
   // Tangential Acceleration: a_t = g * sin(theta)
   const aT = Math.abs(GRAVITY * Math.sin(state.theta));

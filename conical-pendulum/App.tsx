@@ -1,29 +1,24 @@
 import type { ReactElement } from "react";
 import { useState, useMemo, useEffect } from "react";
-import { PendulumSimulation } from "./components/PendulumSimulation";
+
 import { Controls } from "./components/Controls";
 import { DataPanel } from "./components/DataPanel";
+import { PendulumSimulation } from "./components/PendulumSimulation";
 import { Theory } from "./components/Theory";
 import { GRAVITY, PENDULUM_PRESETS } from "./constants.js";
 import type { PendulumConfig } from "./types.js";
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export default function App(): ReactElement {
   // Height (h) is the independent variable shared by all conical pendulums
   const [height, setHeight] = useState<number>(1.2);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
 
   // Start with only the first pendulum (Blue)
-  const [pendulums, setPendulums] = useState<PendulumConfig[]>([
-    PENDULUM_PRESETS[0],
-  ]);
+  const [pendulums, setPendulums] = useState<PendulumConfig[]>([PENDULUM_PRESETS[0]]);
 
   // Calculate shared physics properties
   const angularVelocity = useMemo(() => Math.sqrt(GRAVITY / height), [height]);
-  const period = useMemo(
-    () => (2 * Math.PI) / angularVelocity,
-    [angularVelocity],
-  );
+  const period = useMemo(() => (2 * Math.PI) / angularVelocity, [angularVelocity]);
 
   // Determine the maximum allowable height based on the shortest string
   const minLength = Math.min(...pendulums.map((p) => p.length));
@@ -31,9 +26,7 @@ export default function App(): ReactElement {
 
   // Auto-correct height if lengths change to be smaller than current height
   useEffect(() => {
-    if (height > maxHeight) {
-      setHeight(maxHeight);
-    }
+    if (height > maxHeight) setHeight(maxHeight);
   }, [maxHeight, height]);
 
   const handleHeightChange = (newHeight: number): void => {
@@ -42,10 +35,7 @@ export default function App(): ReactElement {
     setHeight(safeHeight);
   };
 
-  const handlePendulumUpdate = (
-    id: number,
-    updates: Partial<PendulumConfig>,
-  ): void => {
+  const handlePendulumUpdate = (id: number, updates: Partial<PendulumConfig>): void => {
     setPendulums((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
@@ -59,9 +49,8 @@ export default function App(): ReactElement {
     if (pendulums.length >= 3) return;
     const nextPresetIndex = pendulums.length;
 
-    if (nextPresetIndex < PENDULUM_PRESETS.length) {
+    if (nextPresetIndex < PENDULUM_PRESETS.length)
       setPendulums([...pendulums, PENDULUM_PRESETS[nextPresetIndex]]);
-    }
   };
 
   const handleRemovePendulum = (): void => {
@@ -94,11 +83,7 @@ export default function App(): ReactElement {
           />
           <div className="mt-auto pt-4 text-xs text-slate-500 text-center">
             制作者：
-            <a
-              href="https://github.com/mister-hope"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href="https://github.com/mister-hope" target="_blank" rel="noopener noreferrer">
               Mister Hope
             </a>
           </div>

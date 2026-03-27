@@ -1,6 +1,6 @@
 import type { FC, ReactElement } from "react";
 import { useRef, useEffect, useState } from "react";
-import type { SimulationState, PhysicsParams, VectorConfig } from "../types";
+
 import {
   GRAVITY,
   COLORS,
@@ -9,6 +9,22 @@ import {
   SCALE_ACCEL,
   SCALE_FORCE,
 } from "../constants";
+import type { SimulationState, PhysicsParams, VectorConfig } from "../types";
+
+// Helper to define markers dynamically
+// refX="0" ensures the arrow attaches at its base
+const MarkerDef = ({ color }: { color: string }): ReactElement => (
+  <marker
+    id={`arrowhead-${color.replace("#", "")}`}
+    markerWidth="3.3"
+    markerHeight="2.3"
+    refX="0"
+    refY="1.15"
+    orient="auto"
+  >
+    <polygon points="0 0, 3.3 1.15, 0 2.3" fill={color} />
+  </marker>
+);
 
 interface VisualizerProps {
   state: SimulationState;
@@ -44,10 +60,8 @@ export const Visualizer: FC<VisualizerProps> = ({ state, params, vectors }) => {
   const pivotX = dimensions.width / 2;
   const pivotY = 50; // Top margin reduced slightly
 
-  const bobX =
-    pivotX + Math.sin(state.theta) * params.length * PIXELS_PER_METER;
-  const bobY =
-    pivotY + Math.cos(state.theta) * params.length * PIXELS_PER_METER;
+  const bobX = pivotX + Math.sin(state.theta) * params.length * PIXELS_PER_METER;
+  const bobY = pivotY + Math.cos(state.theta) * params.length * PIXELS_PER_METER;
 
   // Physics Values for Vector Lengths
   const vMag = state.omega * params.length;
@@ -174,26 +188,8 @@ export const Visualizer: FC<VisualizerProps> = ({ state, params, vectors }) => {
     />
   );
 
-  // Helper to define markers dynamically
-  // refX="0" ensures the arrow attaches at its base
-  const MarkerDef = ({ color }: { color: string }): ReactElement => (
-    <marker
-      id={`arrowhead-${color.replace("#", "")}`}
-      markerWidth="3.3"
-      markerHeight="2.3"
-      refX="0"
-      refY="1.15"
-      orient="auto"
-    >
-      <polygon points="0 0, 3.3 1.15, 0 2.3" fill={color} />
-    </marker>
-  );
-
   return (
-    <div
-      ref={containerRef}
-      className="flex-1 bg-slate-900 relative overflow-hidden select-none"
-    >
+    <div ref={containerRef} className="flex-1 bg-slate-900 relative overflow-hidden select-none">
       <div className="absolute top-4 left-4 text-slate-500 text-sm pointer-events-none">
         Scale: {PIXELS_PER_METER}px/m
       </div>
@@ -211,24 +207,10 @@ export const Visualizer: FC<VisualizerProps> = ({ state, params, vectors }) => {
 
         {/* Pivot Point */}
         <circle cx={pivotX} cy={pivotY} r="6" fill="#94a3b8" />
-        <rect
-          x={pivotX - 50}
-          y={pivotY - 4}
-          width="100"
-          height="4"
-          fill="#64748b"
-          rx="2"
-        />
+        <rect x={pivotX - 50} y={pivotY - 4} width="100" height="4" fill="#64748b" rx="2" />
 
         {/* String */}
-        <line
-          x1={pivotX}
-          y1={pivotY}
-          x2={bobX}
-          y2={bobY}
-          stroke={COLORS.string}
-          strokeWidth="3"
-        />
+        <line x1={pivotX} y1={pivotY} x2={bobX} y2={bobY} stroke={COLORS.string} strokeWidth="3" />
 
         {/* Vertical Reference */}
         <line
@@ -245,7 +227,7 @@ export const Visualizer: FC<VisualizerProps> = ({ state, params, vectors }) => {
         <circle
           cx={bobX}
           cy={bobY}
-          r={6 * Math.pow(params.mass, 1 / 3)}
+          r={6 * params.mass ** (1 / 3)}
           fill={COLORS.bob}
           stroke="#0ea5e9"
           strokeWidth="2"
@@ -256,42 +238,15 @@ export const Visualizer: FC<VisualizerProps> = ({ state, params, vectors }) => {
         {vectors.showAcceleration && (
           <>
             {/* Projection Lines for Acceleration */}
-            <ProjectionLine
-              startDx={anVecX}
-              startDy={anVecY}
-              endDx={aTotalX}
-              endDy={aTotalY}
-            />
-            <ProjectionLine
-              startDx={atVecX}
-              startDy={atVecY}
-              endDx={aTotalX}
-              endDy={aTotalY}
-            />
+            <ProjectionLine startDx={anVecX} startDy={anVecY} endDx={aTotalX} endDy={aTotalY} />
+            <ProjectionLine startDx={atVecX} startDy={atVecY} endDx={aTotalX} endDy={aTotalY} />
 
             {/* Radial Acc */}
-            <Arrow
-              dx={anVecX}
-              dy={anVecY}
-              color={COLORS.accelRadial}
-              label="an"
-              dashed
-            />
+            <Arrow dx={anVecX} dy={anVecY} color={COLORS.accelRadial} label="an" dashed />
             {/* Tangential Acc */}
-            <Arrow
-              dx={atVecX}
-              dy={atVecY}
-              color={COLORS.accelTangential}
-              label="at"
-              dashed
-            />
+            <Arrow dx={atVecX} dy={atVecY} color={COLORS.accelTangential} label="at" dashed />
             {/* Total Acc */}
-            <Arrow
-              dx={aTotalX}
-              dy={aTotalY}
-              color={COLORS.accelTotal}
-              label="a"
-            />
+            <Arrow dx={aTotalX} dy={aTotalY} color={COLORS.accelTotal} label="a" />
           </>
         )}
 
@@ -305,47 +260,15 @@ export const Visualizer: FC<VisualizerProps> = ({ state, params, vectors }) => {
         {vectors.showForces && (
           <>
             {/* Gravity Components */}
-            <ProjectionLine
-              startDx={GnVecX}
-              startDy={GnVecY}
-              endDx={gravityX}
-              endDy={gravityY}
-            />
-            <ProjectionLine
-              startDx={GtVecX}
-              startDy={GtVecY}
-              endDx={gravityX}
-              endDy={gravityY}
-            />
+            <ProjectionLine startDx={GnVecX} startDy={GnVecY} endDx={gravityX} endDy={gravityY} />
+            <ProjectionLine startDx={GtVecX} startDy={GtVecY} endDx={gravityX} endDy={gravityY} />
 
-            <Arrow
-              dx={GnVecX}
-              dy={GnVecY}
-              color={COLORS.forceGravityComponent}
-              label="Gn"
-              dashed
-            />
-            <Arrow
-              dx={GtVecX}
-              dy={GtVecY}
-              color={COLORS.forceGravityComponent}
-              label="Gt"
-              dashed
-            />
+            <Arrow dx={GnVecX} dy={GnVecY} color={COLORS.forceGravityComponent} label="Gn" dashed />
+            <Arrow dx={GtVecX} dy={GtVecY} color={COLORS.forceGravityComponent} label="Gt" dashed />
 
             {/* Main Forces */}
-            <Arrow
-              dx={gravityX}
-              dy={gravityY}
-              color={COLORS.forceGravity}
-              label="G"
-            />
-            <Arrow
-              dx={tensionX}
-              dy={tensionY}
-              color={COLORS.forceTension}
-              label="T"
-            />
+            <Arrow dx={gravityX} dy={gravityY} color={COLORS.forceGravity} label="G" />
+            <Arrow dx={tensionX} dy={tensionY} color={COLORS.forceTension} label="T" />
           </>
         )}
       </svg>

@@ -1,4 +1,3 @@
-import type { Dispatch, FC, SetStateAction } from "react";
 import {
   Play,
   Pause,
@@ -9,6 +8,8 @@ import {
   Move,
   FastForward,
 } from "lucide-react";
+import type { Dispatch, FC, SetStateAction } from "react";
+
 import type { PhysicsParams, VectorConfig } from "../types";
 import { SimulationMode } from "../types";
 
@@ -42,9 +43,7 @@ export const ControlPanel: FC<ControlPanelProps> = ({
       <div>
         <h2 className="text-2xl font-bold text-white mb-2">参数调节</h2>
         <div>
-          <label className="block text-lg font-medium text-slate-200 mb-2">
-            摆球质量 m (kg)
-          </label>
+          <label className="block text-lg font-medium text-slate-200 mb-2">摆球质量 m (kg)</label>
           <div className="flex items-center gap-4">
             <input
               type="range"
@@ -52,9 +51,9 @@ export const ControlPanel: FC<ControlPanelProps> = ({
               max="5.0"
               step="0.1"
               value={params.mass}
-              onChange={(e) =>
-                setParams({ ...params, mass: parseFloat(e.target.value) })
-              }
+              onChange={(e) => {
+                setParams({ ...params, mass: Number.parseFloat(e.target.value) });
+              }}
               className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-sky-500"
             />
             <span className="text-xl font-mono text-sky-400 w-16 text-right">
@@ -64,9 +63,7 @@ export const ControlPanel: FC<ControlPanelProps> = ({
         </div>
 
         <div className="mt-6">
-          <label className="block text-lg font-medium text-slate-200 mb-2">
-            摆绳长度 L (m)
-          </label>
+          <label className="block text-lg font-medium text-slate-200 mb-2">摆绳长度 L (m)</label>
           <div className="flex items-center gap-4">
             <input
               type="range"
@@ -74,9 +71,9 @@ export const ControlPanel: FC<ControlPanelProps> = ({
               max="4.0"
               step="0.1"
               value={params.length}
-              onChange={(e) =>
-                setParams({ ...params, length: parseFloat(e.target.value) })
-              }
+              onChange={(e) => {
+                setParams({ ...params, length: Number.parseFloat(e.target.value) });
+              }}
               className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-sky-500"
             />
             <span className="text-xl font-mono text-sky-400 w-16 text-right">
@@ -86,9 +83,7 @@ export const ControlPanel: FC<ControlPanelProps> = ({
         </div>
 
         <div className="mt-6">
-          <label className="block text-lg font-medium text-slate-200 mb-2">
-            最大摆角 (振幅)
-          </label>
+          <label className="block text-lg font-medium text-slate-200 mb-2">最大摆角 (振幅)</label>
           <div className="flex items-center gap-4">
             <input
               type="range"
@@ -96,12 +91,12 @@ export const ControlPanel: FC<ControlPanelProps> = ({
               max="30"
               step="1"
               value={params.initialAngle}
-              onChange={(e) =>
+              onChange={(e) => {
                 setParams({
                   ...params,
-                  initialAngle: parseFloat(e.target.value),
-                })
-              }
+                  initialAngle: Number.parseFloat(e.target.value),
+                });
+              }}
               className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-sky-500"
             />
             <span className="text-xl font-mono text-sky-400 w-16 text-right">
@@ -117,11 +112,9 @@ export const ControlPanel: FC<ControlPanelProps> = ({
 
         <div className="grid grid-cols-1 gap-3">
           <button
-            onClick={() =>
-              setMode(
-                isRunning ? SimulationMode.Paused : SimulationMode.Running,
-              )
-            }
+            onClick={() => {
+              setMode(isRunning ? SimulationMode.Paused : SimulationMode.Running);
+            }}
             className={`flex items-center justify-start gap-2 px-4 py-3 rounded-lg font-bold text-lg transition-colors ${
               isRunning
                 ? "bg-amber-600 hover:bg-amber-500 text-white"
@@ -133,7 +126,9 @@ export const ControlPanel: FC<ControlPanelProps> = ({
           </button>
 
           <button
-            onClick={() => setMode(SimulationMode.PauseAtBottom)}
+            onClick={() => {
+              setMode(SimulationMode.PauseAtBottom);
+            }}
             disabled={mode === SimulationMode.PauseAtBottom}
             className={`flex items-center justify-start gap-3 px-4 py-3 rounded-lg font-medium text-lg border transition-colors ${
               mode === SimulationMode.PauseAtBottom
@@ -146,7 +141,9 @@ export const ControlPanel: FC<ControlPanelProps> = ({
           </button>
 
           <button
-            onClick={() => setMode(SimulationMode.PauseAtTop)}
+            onClick={() => {
+              setMode(SimulationMode.PauseAtTop);
+            }}
             disabled={mode === SimulationMode.PauseAtTop}
             className={`flex items-center justify-start gap-3 px-4 py-3 rounded-lg font-medium text-lg border transition-colors ${
               mode === SimulationMode.PauseAtTop
@@ -173,9 +170,9 @@ export const ControlPanel: FC<ControlPanelProps> = ({
         <h3 className="text-lg font-semibold text-slate-300">矢量显示</h3>
 
         <button
-          onClick={() =>
-            setVectors((prev) => ({ ...prev, showForces: !prev.showForces }))
-          }
+          onClick={() => {
+            setVectors((prev) => ({ ...prev, showForces: !prev.showForces }));
+          }}
           className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-lg transition-all ${
             vectors.showForces
               ? "bg-slate-700 border-slate-500 text-white"
@@ -183,10 +180,7 @@ export const ControlPanel: FC<ControlPanelProps> = ({
           }`}
         >
           <div className="flex items-center gap-3">
-            <Move
-              size={24}
-              className={vectors.showForces ? "text-pink-400" : ""}
-            />
+            <Move size={24} className={vectors.showForces ? "text-pink-400" : ""} />
             <span>受力分析</span>
           </div>
           <div
@@ -195,12 +189,12 @@ export const ControlPanel: FC<ControlPanelProps> = ({
         </button>
 
         <button
-          onClick={() =>
+          onClick={() => {
             setVectors((prev) => ({
               ...prev,
               showVelocity: !prev.showVelocity,
-            }))
-          }
+            }));
+          }}
           className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-lg transition-all ${
             vectors.showVelocity
               ? "bg-slate-700 border-slate-500 text-white"
@@ -208,10 +202,7 @@ export const ControlPanel: FC<ControlPanelProps> = ({
           }`}
         >
           <div className="flex items-center gap-3">
-            <FastForward
-              size={24}
-              className={vectors.showVelocity ? "text-green-400" : ""}
-            />
+            <FastForward size={24} className={vectors.showVelocity ? "text-green-400" : ""} />
             <span>速度</span>
           </div>
           <div
@@ -220,12 +211,12 @@ export const ControlPanel: FC<ControlPanelProps> = ({
         </button>
 
         <button
-          onClick={() =>
+          onClick={() => {
             setVectors((prev) => ({
               ...prev,
               showAcceleration: !prev.showAcceleration,
-            }))
-          }
+            }));
+          }}
           className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-lg transition-all ${
             vectors.showAcceleration
               ? "bg-slate-700 border-slate-500 text-white"
@@ -233,10 +224,7 @@ export const ControlPanel: FC<ControlPanelProps> = ({
           }`}
         >
           <div className="flex items-center gap-3">
-            <Activity
-              size={24}
-              className={vectors.showAcceleration ? "text-amber-400" : ""}
-            />
+            <Activity size={24} className={vectors.showAcceleration ? "text-amber-400" : ""} />
             <span>加速度</span>
           </div>
           <div
@@ -247,11 +235,7 @@ export const ControlPanel: FC<ControlPanelProps> = ({
 
       <div className="mt-auto pt-4 text-xs text-slate-500 text-center">
         制作者：
-        <a
-          href="https://github.com/mister-hope"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="https://github.com/mister-hope" target="_blank" rel="noopener noreferrer">
           Mister Hope
         </a>
       </div>

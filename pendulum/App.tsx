@@ -1,15 +1,16 @@
 import type { FC } from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
+
 import { ControlPanel } from "./components/ControlPanel";
 import { DataDisplay } from "./components/DataDisplay";
 import { Visualizer } from "./components/Visualizer";
+import { GRAVITY, DT } from "./constants";
 import type { SimulationState, PhysicsParams, VectorConfig } from "./types";
 import { SimulationMode } from "./types";
-import { GRAVITY, DT } from "./constants";
 
 const INITIAL_PARAMS: PhysicsParams = {
-  mass: 2.0,
-  length: 2.0,
+  mass: 2,
+  length: 2,
   gravity: GRAVITY,
   initialAngle: 30,
 };
@@ -34,8 +35,8 @@ const App: FC = () => {
   const [mode, setMode] = useState<SimulationMode>(SimulationMode.Paused);
   const [vectors, setVectors] = useState<VectorConfig>(INITIAL_VECTORS);
 
-  const requestRef = useRef<number | undefined>(undefined);
-  const lastTimeRef = useRef<number | undefined>(undefined);
+  const requestRef = useRef<number | undefined>();
+  const lastTimeRef = useRef<number | undefined>();
   const accumulatorRef = useRef<number>(0);
 
   // Use a Ref to store the latest physics state.
@@ -72,11 +73,7 @@ const App: FC = () => {
 
   // Runge-Kutta 4 (RK4) Integration for higher precision
   const updatePhysics = useCallback(
-    (
-      currentState: SimulationState,
-      currentParams: PhysicsParams,
-      dt: number,
-    ): SimulationState => {
+    (currentState: SimulationState, currentParams: PhysicsParams, dt: number): SimulationState => {
       const { theta, omega } = currentState;
       const { gravity, length } = currentParams;
 
@@ -88,12 +85,10 @@ const App: FC = () => {
       ): {
         dTheta: number;
         dOmega: number;
-      } => {
-        return {
-          dTheta: om,
-          dOmega: -(gravity / length) * Math.sin(th),
-        };
-      };
+      } => ({
+        dTheta: om,
+        dOmega: -(gravity / length) * Math.sin(th),
+      });
 
       // k1
       const k1 = evaluateDerivatives(0, theta, omega);
@@ -113,19 +108,11 @@ const App: FC = () => {
       );
 
       // k4
-      const k4 = evaluateDerivatives(
-        0 + dt,
-        theta + k3.dTheta * dt,
-        omega + k3.dOmega * dt,
-      );
+      const k4 = evaluateDerivatives(0 + dt, theta + k3.dTheta * dt, omega + k3.dOmega * dt);
 
       // Combine
-      const newTheta =
-        theta +
-        (dt / 6.0) * (k1.dTheta + 2 * k2.dTheta + 2 * k3.dTheta + k4.dTheta);
-      const newOmega =
-        omega +
-        (dt / 6.0) * (k1.dOmega + 2 * k2.dOmega + 2 * k3.dOmega + k4.dOmega);
+      const newTheta = theta + (dt / 6) * (k1.dTheta + 2 * k2.dTheta + 2 * k3.dTheta + k4.dTheta);
+      const newOmega = omega + (dt / 6) * (k1.dOmega + 2 * k2.dOmega + 2 * k3.dOmega + k4.dOmega);
 
       // Calculate instantaneous alpha for display (based on new position)
       const newAlpha = -(gravity / length) * Math.sin(newTheta);

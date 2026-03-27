@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 import { createRequire } from "node:module";
-import path from "path";
+import path from "node:path";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";

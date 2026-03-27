@@ -1,7 +1,8 @@
 import type { FC, MouseEvent } from "react";
 import { useEffect, useRef } from "react";
-import type { PendulumConfig } from "../types.js";
+
 import { GRAVITY } from "../constants.js";
+import type { PendulumConfig } from "../types.js";
 
 interface PendulumSimulationProps {
   height: number;
@@ -17,7 +18,7 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
   angularVelocity,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | undefined>(undefined);
+  const animationRef = useRef<number | undefined>();
   const timeRef = useRef<number>(0);
   const lastFrameTimeRef = useRef<number>(0);
 
@@ -25,7 +26,7 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
   const cameraRef = useRef({
     yaw: 0, // Rotation around Y axis
     pitch: 0.2, // Rotation around X axis (initial tilt)
-    zoom: 1.0,
+    zoom: 1,
   });
 
   // Mouse Interaction State
@@ -47,15 +48,13 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
 
       lastFrameTimeRef.current = timestamp;
 
-      if (isPlaying) {
-        timeRef.current += deltaTime;
-      }
+      if (isPlaying) timeRef.current += deltaTime;
 
       // Physics State
       const currentAngle = timeRef.current * angularVelocity;
 
       // Setup Canvas
-      const width = canvas.width;
+      const { width } = canvas;
       const heightPx = canvas.height;
       const centerX = width / 2;
       const centerY = heightPx / 6;
@@ -291,7 +290,7 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
         // --- Force Analysis for Blue Ball (ID=1) ---
         if (obj.config.id === 1) {
           const m = obj.config.mass;
-          const r = obj.phys.r;
+          const { r } = obj.phys;
 
           // Scale factor for vectors (pixels per Newton approx, adjust for visibility)
           const forceScale = 0.05; // Visual scaling factor
@@ -300,16 +299,7 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
           // Color: Blue (#3b82f6)
           const vectorGMagnitude = m * GRAVITY * forceScale;
 
-          drawArrow3D(
-            obj.phys.x,
-            obj.phys.y,
-            obj.phys.z,
-            0,
-            vectorGMagnitude,
-            0,
-            "#3b82f6",
-            "mg",
-          );
+          drawArrow3D(obj.phys.x, obj.phys.y, obj.phys.z, 0, vectorGMagnitude, 0, "#3b82f6", "mg");
 
           // Tension Components
           // Ty balances gravity: magnitude mg, Direction Up (-Y)
@@ -385,26 +375,10 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
             };
 
             // Line from Tip of Ty -> Tip of T (Parallel to Fn)
-            drawDashedLine3D(
-              tipTy.x,
-              tipTy.y,
-              tipTy.z,
-              tipT.x,
-              tipT.y,
-              tipT.z,
-              "#94a3b8",
-            );
+            drawDashedLine3D(tipTy.x, tipTy.y, tipTy.z, tipT.x, tipT.y, tipT.z, "#94a3b8");
 
             // Line from Tip of Fn -> Tip of T (Parallel to Ty)
-            drawDashedLine3D(
-              tipFn.x,
-              tipFn.y,
-              tipFn.z,
-              tipT.x,
-              tipT.y,
-              tipT.z,
-              "#94a3b8",
-            );
+            drawDashedLine3D(tipFn.x, tipFn.y, tipFn.z, tipT.x, tipT.y, tipT.z, "#94a3b8");
           }
         }
 
