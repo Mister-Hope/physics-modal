@@ -7,5 +7,5 @@ export interface PendulumConfig {
 }
 
 export interface SimulationState {
-  t: number; // accumulated time
+  time: number; // accumulated time
 }

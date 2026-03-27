@@ -1,6 +1,6 @@
 import type { PhysicsResult } from "../types";
 
-export const G = 9.8; // m/s^2
+export const GRAVITY = 9.8; // m/s^2
 export const TRAIN_MASS = 1000; // Arbitrary mass for vector scaling
 
 export const calculatePhysics = (
@@ -11,7 +11,7 @@ export const calculatePhysics = (
   const angleRad = (angleDeg * Math.PI) / 180;
 
   // Ideal velocity: v = sqrt(g * r * tan(theta))
-  const idealVelocity = Math.sqrt(G * radius * Math.tan(angleRad));
+  const idealVelocity = Math.sqrt(GRAVITY * radius * Math.tan(angleRad));
 
   // Forces calculation
   // We use a coordinate system aligned with the banked slope for easier force component calculation:
@@ -31,7 +31,8 @@ export const calculatePhysics = (
 
   const centripetalAccel = (velocity * velocity) / radius;
 
-  const normalForce = TRAIN_MASS * (G * Math.cos(angleRad) + centripetalAccel * Math.sin(angleRad));
+  const normalForce =
+    TRAIN_MASS * (GRAVITY * Math.cos(angleRad) + centripetalAccel * Math.sin(angleRad));
 
   // Parallel: G_parallel + F_flange = m * a_parallel
   // mg*sin(theta) + F_flange = m * (v^2 / r) * cos(theta)
@@ -41,9 +42,10 @@ export const calculatePhysics = (
   // Positive F_flange => Force points INWARD (down slope) => Outer rail pushes IN => Squeezing Outer Rail.
   // Negative F_flange => Force points OUTWARD (up slope) => Inner rail pushes OUT => Squeezing Inner Rail.
 
-  const flangeForce = TRAIN_MASS * (centripetalAccel * Math.cos(angleRad) - G * Math.sin(angleRad));
+  const flangeForce =
+    TRAIN_MASS * (centripetalAccel * Math.cos(angleRad) - GRAVITY * Math.sin(angleRad));
 
-  const gravity = TRAIN_MASS * G;
+  const gravity = TRAIN_MASS * GRAVITY;
   const netForce = TRAIN_MASS * centripetalAccel;
 
   // Determine Status

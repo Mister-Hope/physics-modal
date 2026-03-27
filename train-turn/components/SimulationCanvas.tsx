@@ -211,19 +211,16 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
     // --- Forces ---
     if (state.forceMode !== "none") {
       const drawArrow = (
-        fromX: number,
-        fromY: number,
-        vecX: number,
-        vecY: number,
-        color: string,
-        label: string,
-        isDashed = false,
+        from: { x: number; y: number },
+        vec: { x: number; y: number },
+        style: { color: string; label: string; isDashed?: boolean },
       ): void => {
         const headLength = 15;
-        const toX = fromX + vecX;
-        const toY = fromY + vecY;
-        const angle = Math.atan2(vecY, vecX);
-        const len = Math.sqrt(vecX * vecX + vecY * vecY);
+        const toX = from.x + vec.x;
+        const toY = from.y + vec.y;
+        const angle = Math.atan2(vec.y, vec.x);
+        const len = Math.hypot(vec.x, vec.y);
+        const { color, label, isDashed = false } = style;
 
         if (len < 5 && !isDashed) return;
 
@@ -235,7 +232,7 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
         else ctx.setLineDash([]);
 
         ctx.beginPath();
-        ctx.moveTo(fromX, fromY);
+        ctx.moveTo(from.x, from.y);
         ctx.lineTo(toX, toY);
         ctx.stroke();
 
@@ -255,8 +252,8 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
 
         ctx.font = "bold 20px sans-serif";
         const textMetrics = ctx.measureText(label);
-        const textX = toX + (vecX > 0 ? 10 : -10 - textMetrics.width);
-        const textY = toY + (vecY > 0 ? 25 : -10);
+        const textX = toX + (vec.x > 0 ? 10 : -10 - textMetrics.width);
+        const textY = toY + (vec.y > 0 ? 25 : -10);
 
         ctx.fillStyle = "rgba(255,255,255,0.7)";
         ctx.fillRect(textX - 2, textY - 18, textMetrics.width + 4, 22);
@@ -272,14 +269,18 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
       const fnOriginX = isConcurrent ? comX : trackWidth / 2;
       const fnOriginY = isConcurrent ? comY : axleCenterY;
 
-      drawArrow(fnOriginX, fnOriginY, 0, -fnMag, "#9333ea", "Fn");
+      drawArrow(
+        { x: fnOriginX, y: fnOriginY },
+        { x: 0, y: -fnMag },
+        { color: "#9333ea", label: "Fn" },
+      );
 
       // 2. Gravity
       const gMag = physics.gravity * forceScale;
       const gX = gMag * -Math.sin(angleRad);
       const gY = gMag * Math.cos(angleRad);
 
-      drawArrow(comX, comY, gX, gY, "#000000", "G");
+      drawArrow({ x: comX, y: comY }, { x: gX, y: gY }, { color: "#000000", label: "G" });
 
       // 3. Flange Force
       const fNewtons = physics.flangeForce;
@@ -290,21 +291,17 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
 
         let fOriginX = comX;
         let fOriginY = comY;
-        let fVecX = 0;
+        const fVecX = fNewtons > 0 ? -fMag : fMag;
 
-        if (fNewtons > 0) fVecX = -fMag;
-        else fVecX = fMag;
-
-        if (!isConcurrent) {
-          fOriginY = axleCenterY;
-          if (fNewtons > 0) fOriginX = trackWidth;
-          else fOriginX = 0;
-        } else {
+        if (isConcurrent) {
           fOriginX = comX;
           fOriginY = comY;
+        } else {
+          fOriginY = axleCenterY;
+          fOriginX = fNewtons > 0 ? trackWidth : 0;
         }
 
-        drawArrow(fOriginX, fOriginY, fVecX, 0, color, "F");
+        drawArrow({ x: fOriginX, y: fOriginY }, { x: fVecX, y: 0 }, { color, label: "F" });
       }
 
       // 4. Net Force
@@ -312,7 +309,11 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
       const netVecX = netMag * -Math.cos(angleRad);
       const netVecY = netMag * -Math.sin(angleRad);
 
-      drawArrow(comX, comY, netVecX, netVecY, "#22c55e", "F向", true);
+      drawArrow(
+        { x: comX, y: comY },
+        { x: netVecX, y: netVecY },
+        { color: "#22c55e", label: "F向", isDashed: true },
+      );
     }
 
     // --- Plane Indicator ---

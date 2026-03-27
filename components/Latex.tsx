@@ -71,8 +71,8 @@ export const Latex: FC<LatexProps> = memo(({ children, latex, block, className, 
               // Override internal path fills to match the requested color
               const paths = svg.querySelectorAll("path, rect, polygon");
 
-              paths.forEach((p) => {
-                (p as SVGElement).style.fill = color;
+              paths.forEach((path) => {
+                (path as SVGElement).style.fill = color;
               });
             }
           }
@@ -100,11 +100,11 @@ export const Latex: FC<LatexProps> = memo(({ children, latex, block, className, 
       className={className}
       style={{
         display: block ? "block" : "inline-block",
-        verticalAlign: block ? undefined : "middle",
+        verticalAlign: block ? void 0 : "middle",
         color: color,
         // Vertical alignment adjustment for inline math
-        position: block ? undefined : "relative",
-        bottom: block ? undefined : "0.125em",
+        position: block ? void 0 : "relative",
+        bottom: block ? void 0 : "0.125em",
       }}
     />
   );

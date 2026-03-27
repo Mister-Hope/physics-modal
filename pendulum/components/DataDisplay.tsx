@@ -86,10 +86,10 @@ export const DataDisplay: FC<DataDisplayProps> = ({ state, params }) => {
   const aN = params.length * (state.omega * state.omega);
 
   // Total Acceleration
-  const a = Math.sqrt(aT * aT + aN * aN);
+  const totalAccel = Math.hypot(aT, aN);
 
   // Velocity: v = L * omega
-  const v = Math.abs(state.omega * params.length);
+  const velocity = Math.abs(state.omega * params.length);
 
   // Tension: T = m(g*cos(theta) + a_n)
   const tension = params.mass * (GRAVITY * Math.cos(state.theta) + aN);
@@ -150,7 +150,7 @@ export const DataDisplay: FC<DataDisplayProps> = ({ state, params }) => {
         <Row
           label="线速度"
           symbol="v"
-          value={v}
+          value={velocity}
           unit="m/s"
           colorClass="text-green-400"
           hexColor={COLORS.velocity}
@@ -158,7 +158,7 @@ export const DataDisplay: FC<DataDisplayProps> = ({ state, params }) => {
         <Row
           label="合加速度"
           symbol="a"
-          value={a}
+          value={totalAccel}
           unit="m/s²"
           colorClass="text-amber-400"
           hexColor={COLORS.accelTotal}

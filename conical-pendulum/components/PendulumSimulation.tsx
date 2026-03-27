@@ -18,7 +18,7 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
   angularVelocity,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | undefined>();
+  const animationRef = useRef<number | undefined>(void 0);
   const timeRef = useRef<number>(0);
   const lastFrameTimeRef = useRef<number>(0);
 
@@ -102,22 +102,18 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
 
       // Helper to draw 3D Arrow
       const drawArrow3D = (
-        startX: number,
-        startY: number,
-        startZ: number,
-        vecX: number,
-        vecY: number,
-        vecZ: number,
-        color: string,
-        label: string,
-        isDashed = false,
+        start: { x: number; y: number; z: number },
+        vec: { x: number; y: number; z: number },
+        style: { color: string; label: string; isDashed?: boolean },
       ): void => {
-        const endX = startX + vecX;
-        const endY = startY + vecY;
-        const endZ = startZ + vecZ;
+        const endX = start.x + vec.x;
+        const endY = start.y + vec.y;
+        const endZ = start.z + vec.z;
 
-        const pStart = project(startX, startY, startZ);
+        const pStart = project(start.x, start.y, start.z);
         const pEnd = project(endX, endY, endZ);
+
+        const { color, label, isDashed = false } = style;
 
         // Line
         ctx.beginPath();
@@ -163,23 +159,19 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
 
       // Helper to draw dashed connecting line (no arrow)
       const drawDashedLine3D = (
-        x1: number,
-        y1: number,
-        z1: number,
-        x2: number,
-        y2: number,
-        z2: number,
+        start: { x: number; y: number; z: number },
+        end: { x: number; y: number; z: number },
         color: string,
       ): void => {
-        const p1 = project(x1, y1, z1);
-        const p2 = project(x2, y2, z2);
+        const pStart = project(start.x, start.y, start.z);
+        const pEnd = project(end.x, end.y, end.z);
 
         ctx.beginPath();
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5 * p1.scale;
+        ctx.lineWidth = 1.5 * pStart.scale;
         ctx.setLineDash([4, 4]);
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
+        ctx.moveTo(pStart.x, pStart.y);
+        ctx.lineTo(pEnd.x, pEnd.y);
         ctx.stroke();
         ctx.setLineDash([]);
       };
@@ -212,13 +204,13 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
       ctx.fill();
 
       // --- Pendulums ---
-      const objectsToRender = pendulums.map((p) => {
-        const r = Math.sqrt(Math.max(0, p.length * p.length - height * height));
+      const objectsToRender = pendulums.map((pendulum) => {
+        const radius = Math.sqrt(Math.max(0, pendulum.length * pendulum.length - height * height));
 
         // Physics coordinates (Right-handed: Y down, Z forward/back)
         // Pos: x = r*cos(angle), y = height, z = r*sin(angle)
-        const xPhys = r * Math.cos(currentAngle);
-        const zPhys = r * Math.sin(currentAngle);
+        const xPhys = radius * Math.cos(currentAngle);
+        const zPhys = radius * Math.sin(currentAngle);
         const yPhys = height;
 
         const pos2D = project(xPhys, yPhys, zPhys);
@@ -226,18 +218,18 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
         // Orbit Path (Trail)
         const pathPoints = [];
 
-        for (let a = 0; a <= Math.PI * 2; a += 0.1) {
-          const px = r * Math.cos(a);
-          const pz = r * Math.sin(a);
+        for (let orbitAngle = 0; orbitAngle <= Math.PI * 2; orbitAngle += 0.1) {
+          const px = radius * Math.cos(orbitAngle);
+          const pz = radius * Math.sin(orbitAngle);
 
           pathPoints.push(project(px, height, pz));
         }
 
         return {
-          config: p,
+          config: pendulum,
           pos: pos2D,
           path: pathPoints,
-          phys: { r, x: xPhys, y: yPhys, z: zPhys },
+          phys: { radius, x: xPhys, y: yPhys, z: zPhys },
         };
       });
 
@@ -289,40 +281,38 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
 
         // --- Force Analysis for Blue Ball (ID=1) ---
         if (obj.config.id === 1) {
-          const m = obj.config.mass;
-          const { r } = obj.phys;
+          const { mass } = obj.config;
+          const { radius } = obj.phys;
 
           // Scale factor for vectors (pixels per Newton approx, adjust for visibility)
           const forceScale = 0.05; // Visual scaling factor
 
           // Gravity: mg (Downwards +Y)
           // Color: Blue (#3b82f6)
-          const vectorGMagnitude = m * GRAVITY * forceScale;
+          const vectorGMagnitude = mass * GRAVITY * forceScale;
 
-          drawArrow3D(obj.phys.x, obj.phys.y, obj.phys.z, 0, vectorGMagnitude, 0, "#3b82f6", "mg");
+          drawArrow3D(
+            obj.phys,
+            { x: 0, y: vectorGMagnitude, z: 0 },
+            { color: "#3b82f6", label: "mg" },
+          );
 
           // Tension Components
           // Ty balances gravity: magnitude mg, Direction Up (-Y)
           // Color: Light Blue / Purple (#a78bfa) - Neutral balance color
-          const vectorYMagnitude = m * GRAVITY * forceScale;
+          const vectorYMagnitude = mass * GRAVITY * forceScale;
 
           drawArrow3D(
-            obj.phys.x,
-            obj.phys.y,
-            obj.phys.z,
-            0,
-            -vectorYMagnitude,
-            0,
-            "#a78bfa",
-            "",
-            true,
+            obj.phys,
+            { x: 0, y: -vectorYMagnitude, z: 0 },
+            { color: "#a78bfa", label: "", isDashed: true },
           ); // Dashed
 
           // Tx provides centripetal force: Fn = m * omega^2 * r
           // Direction: Towards center (0, y, 0)
           // Color: Yellow (#eab308)
-          const distToCenter = Math.sqrt(obj.phys.x ** 2 + obj.phys.z ** 2);
-          const Fn_mag = m * angularVelocity ** 2 * r * forceScale;
+          const distToCenter = Math.hypot(obj.phys.x, obj.phys.z);
+          const fnMag = mass * angularVelocity ** 2 * radius * forceScale;
 
           if (distToCenter > 0.001) {
             const dirX = -obj.phys.x / distToCenter;
@@ -330,36 +320,25 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
 
             // Draw Fn (Tx)
             drawArrow3D(
-              obj.phys.x,
-              obj.phys.y,
-              obj.phys.z,
-              dirX * Fn_mag,
-              0,
-              dirZ * Fn_mag,
-              "#eab308",
-              "Fn",
-              true, // Dashed
+              obj.phys,
+              { x: dirX * fnMag, y: 0, z: dirZ * fnMag },
+              { color: "#eab308", label: "Fn", isDashed: true },
             );
 
             // Total Tension T = Vector Sum
             // Color: Red (#ef4444)
             drawArrow3D(
-              obj.phys.x,
-              obj.phys.y,
-              obj.phys.z,
-              dirX * Fn_mag,
-              -vectorYMagnitude,
-              dirZ * Fn_mag,
-              "#ef4444",
-              "FT",
+              obj.phys,
+              { x: dirX * fnMag, y: -vectorYMagnitude, z: dirZ * fnMag },
+              { color: "#ef4444", label: "FT" },
             );
 
             // --- Decomposition Dashed Lines (Parallelogram) ---
             // Calculate Tip Positions
             const tipT = {
-              x: obj.phys.x + dirX * Fn_mag,
+              x: obj.phys.x + dirX * fnMag,
               y: obj.phys.y - vectorYMagnitude,
-              z: obj.phys.z + dirZ * Fn_mag,
+              z: obj.phys.z + dirZ * fnMag,
             };
 
             const tipTy = {
@@ -369,16 +348,16 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
             };
 
             const tipFn = {
-              x: obj.phys.x + dirX * Fn_mag,
+              x: obj.phys.x + dirX * fnMag,
               y: obj.phys.y,
-              z: obj.phys.z + dirZ * Fn_mag,
+              z: obj.phys.z + dirZ * fnMag,
             };
 
             // Line from Tip of Ty -> Tip of T (Parallel to Fn)
-            drawDashedLine3D(tipTy.x, tipTy.y, tipTy.z, tipT.x, tipT.y, tipT.z, "#94a3b8");
+            drawDashedLine3D(tipTy, tipT, "#94a3b8");
 
             // Line from Tip of Fn -> Tip of T (Parallel to Ty)
-            drawDashedLine3D(tipFn.x, tipFn.y, tipFn.z, tipT.x, tipT.y, tipT.z, "#94a3b8");
+            drawDashedLine3D(tipFn, tipT, "#94a3b8");
           }
         }
 
@@ -427,16 +406,16 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
   }, [height, pendulums, isPlaying, angularVelocity]);
 
   // Interaction Handlers
-  const handleMouseDown = (e: MouseEvent): void => {
+  const handleMouseDown = (event: MouseEvent): void => {
     isDragging.current = true;
-    lastMousePos.current = { x: e.clientX, y: e.clientY };
+    lastMousePos.current = { x: event.clientX, y: event.clientY };
   };
 
-  const handleMouseMove = (e: MouseEvent): void => {
+  const handleMouseMove = (event: MouseEvent): void => {
     if (!isDragging.current) return;
 
-    const deltaX = e.clientX - lastMousePos.current.x;
-    const deltaY = e.clientY - lastMousePos.current.y;
+    const deltaX = event.clientX - lastMousePos.current.x;
+    const deltaY = event.clientY - lastMousePos.current.y;
 
     // Update camera angles
     cameraRef.current.yaw += deltaX * 0.01;
@@ -446,7 +425,7 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
       Math.min(1.5, cameraRef.current.pitch + deltaY * 0.01),
     );
 
-    lastMousePos.current = { x: e.clientX, y: e.clientY };
+    lastMousePos.current = { x: event.clientX, y: event.clientY };
   };
 
   const handleMouseUp = (): void => {
