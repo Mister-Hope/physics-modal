@@ -52,6 +52,26 @@ export const ControlPanel: FC<ControlPanelProps> = ({
               step="0.1"
               value={params.mass}
               onChange={(event) => {
+                setParams({ ...params, mass: Number.parseFloat(event.target.value) });
+              }}
+              className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-sky-500"
+            />
+            <span className="text-xl font-mono text-sky-400 w-16 text-right">
+              {params.mass.toFixed(1)}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <label className="block text-lg font-medium text-slate-200 mb-2">摆绳长度 L (m)</label>
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min="0.5"
+              max="4.0"
+              step="0.1"
+              value={params.length}
+              onChange={(event) => {
                 setParams({ ...params, length: Number.parseFloat(event.target.value) });
               }}
               className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-sky-500"
