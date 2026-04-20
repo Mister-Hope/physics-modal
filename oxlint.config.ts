@@ -1,15 +1,7 @@
-import { defaultIgnorePatterns, getOxlintConfigs } from "oxc-config-hope/oxlint";
-import { defineConfig } from "oxlint";
+import {  defineHopeConfig } from "oxc-config-hope/oxlint";
 
-export default defineConfig({
-  extends: getOxlintConfigs({
+export default defineHopeConfig({
     node: true,
-  }),
-  options: {
-    typeAware: true,
-    typeCheck: true,
-  },
-  ignorePatterns: [...defaultIgnorePatterns, "lib/"],
   rules: {
     complexity: "off",
     "max-depth": "off",

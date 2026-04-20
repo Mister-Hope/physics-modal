@@ -95,7 +95,7 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
         return {
           x: centerX + x1 * metersToPixels * scale,
           y: centerY + y2 * metersToPixels * scale,
-          scale: scale,
+          scale,
           zDepth: z2, // Used for sorting
         };
       };
@@ -162,6 +162,7 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
       };
 
       // Helper to draw dashed connecting line (no arrow)
+      // oxlint-disable-next-line max-params
       const drawDashedLine3D = (
         x1: number,
         y1: number,

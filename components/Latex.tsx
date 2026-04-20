@@ -101,7 +101,7 @@ export const Latex: FC<LatexProps> = memo(({ children, latex, block, className, 
       style={{
         display: block ? "block" : "inline-block",
         verticalAlign: block ? undefined : "middle",
-        color: color,
+        color,
         // Vertical alignment adjustment for inline math
         position: block ? undefined : "relative",
         bottom: block ? undefined : "0.125em",
