@@ -210,6 +210,7 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
 
     // --- Forces ---
     if (state.forceMode !== "none") {
+      // oxlint-disable-next-line max-params
       const drawArrow = (
         fromX: number,
         fromY: number,
@@ -223,7 +224,7 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
         const toX = fromX + vecX;
         const toY = fromY + vecY;
         const angle = Math.atan2(vecY, vecX);
-        const len = Math.sqrt(vecX * vecX + vecY * vecY);
+        const len = Math.hypot(vecX, vecY);
 
         if (len < 5 && !isDashed) return;
 
@@ -290,18 +291,15 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
 
         let fOriginX = comX;
         let fOriginY = comY;
-        let fVecX = 0;
 
-        if (fNewtons > 0) fVecX = -fMag;
-        else fVecX = fMag;
+        const fVecX = fNewtons > 0 ? -fMag : fMag;
 
-        if (!isConcurrent) {
-          fOriginY = axleCenterY;
-          if (fNewtons > 0) fOriginX = trackWidth;
-          else fOriginX = 0;
-        } else {
+        if (isConcurrent) {
           fOriginX = comX;
           fOriginY = comY;
+        } else {
+          fOriginY = axleCenterY;
+          fOriginX = fNewtons > 0 ? trackWidth : 0;
         }
 
         drawArrow(fOriginX, fOriginY, fVecX, 0, color, "F");

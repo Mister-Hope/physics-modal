@@ -44,8 +44,8 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
           max="30"
           step="1"
           value={state.angle}
-          onChange={(e) => {
-            onChange({ angle: Number(e.target.value) });
+          onChange={(event) => {
+            onChange({ angle: Number(event.target.value) });
           }}
           className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer"
         />
@@ -69,8 +69,8 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
           max="4000"
           step="50"
           value={state.radius}
-          onChange={(e) => {
-            onChange({ radius: Number(e.target.value) });
+          onChange={(event) => {
+            onChange({ radius: Number(event.target.value) });
           }}
           className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer"
         />
@@ -115,8 +115,8 @@ const ControlPanel: FC<ControlPanelProps> = ({ state, physics, onChange }) => {
             max={MAX_KMH}
             step="1"
             value={velocityKmh}
-            onChange={(e) => {
-              handleVelocityChange(Number(e.target.value));
+            onChange={(event) => {
+              handleVelocityChange(Number(event.target.value));
             }}
             className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer relative z-10"
             style={{ background: "transparent", boxShadow: "none" }}

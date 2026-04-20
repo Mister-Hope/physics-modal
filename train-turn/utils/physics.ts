@@ -1,5 +1,6 @@
 import type { PhysicsResult } from "../types";
 
+// oxlint-disable-next-line id-length
 export const G = 9.8; // m/s^2
 export const TRAIN_MASS = 1000; // Arbitrary mass for vector scaling
 
