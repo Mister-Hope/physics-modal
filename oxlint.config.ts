@@ -1,7 +1,7 @@
-import {  defineHopeConfig } from "oxc-config-hope/oxlint";
+import { defineHopeConfig } from "oxc-config-hope/oxlint";
 
 export default defineHopeConfig({
-    node: true,
+  node: true,
   rules: {
     complexity: "off",
     "max-depth": "off",

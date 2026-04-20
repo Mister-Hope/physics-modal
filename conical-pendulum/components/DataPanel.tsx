@@ -65,15 +65,20 @@ export const DataPanel: FC<DataPanelProps> = ({ height, angularVelocity, period,
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800 bg-slate-900/50 text-md">
-          {pendulums.map((p) => {
-            const radius = Math.sqrt(Math.max(0, p.length * p.length - height * height));
-            const angleDeg = (Math.acos(Math.min(1, height / p.length)) * 180) / Math.PI;
+          {pendulums.map((pendulum) => {
+            const radius = Math.sqrt(
+              Math.max(0, pendulum.length * pendulum.length - height * height),
+            );
+            const angleDeg = (Math.acos(Math.min(1, height / pendulum.length)) * 180) / Math.PI;
 
             return (
-              <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
+              <tr key={pendulum.id} className="hover:bg-slate-800/30 transition-colors">
                 <td className="px-4 py-3 font-bold flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.color }}></div>
-                  <span className="text-slate-200">{p.label.split(" ")[0]}</span>
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: pendulum.color }}
+                  ></div>
+                  <span className="text-slate-200">{pendulum.label.split(" ")[0]}</span>
                 </td>
                 <td className="px-4 py-3 font-mono text-slate-300">{radius.toFixed(2)} m</td>
                 <td className="px-4 py-3 font-mono text-slate-300">{angleDeg.toFixed(1)}°</td>

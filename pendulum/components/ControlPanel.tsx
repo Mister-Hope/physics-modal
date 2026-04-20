@@ -15,9 +15,9 @@ import { SimulationMode } from "../types";
 
 interface ControlPanelProps {
   params: PhysicsParams;
-  setParams: (p: PhysicsParams) => void;
+  setParams: (params: PhysicsParams) => void;
   mode: SimulationMode;
-  setMode: (m: SimulationMode) => void;
+  setMode: (mode: SimulationMode) => void;
   reset: () => void;
   vectors: VectorConfig;
   setVectors: Dispatch<SetStateAction<VectorConfig>>;
@@ -51,28 +51,8 @@ export const ControlPanel: FC<ControlPanelProps> = ({
               max="5.0"
               step="0.1"
               value={params.mass}
-              onChange={(e) => {
-                setParams({ ...params, mass: Number.parseFloat(e.target.value) });
-              }}
-              className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-sky-500"
-            />
-            <span className="text-xl font-mono text-sky-400 w-16 text-right">
-              {params.mass.toFixed(1)}
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <label className="block text-lg font-medium text-slate-200 mb-2">摆绳长度 L (m)</label>
-          <div className="flex items-center gap-4">
-            <input
-              type="range"
-              min="0.5"
-              max="4.0"
-              step="0.1"
-              value={params.length}
-              onChange={(e) => {
-                setParams({ ...params, length: Number.parseFloat(e.target.value) });
+              onChange={(event) => {
+                setParams({ ...params, length: Number.parseFloat(event.target.value) });
               }}
               className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-sky-500"
             />
@@ -91,10 +71,10 @@ export const ControlPanel: FC<ControlPanelProps> = ({
               max="30"
               step="1"
               value={params.initialAngle}
-              onChange={(e) => {
+              onChange={(event) => {
                 setParams({
                   ...params,
-                  initialAngle: Number.parseFloat(e.target.value),
+                  initialAngle: Number.parseFloat(event.target.value),
                 });
               }}
               className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-sky-500"

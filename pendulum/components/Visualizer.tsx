@@ -132,7 +132,7 @@ export const Visualizer: FC<VisualizerProps> = ({ state, params, vectors }) => {
     label?: string;
     showLabel?: boolean;
     dashed?: boolean;
-  }): ReactElement => {
+  }): ReactElement | null => {
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return null;
     const endX = bobX + dx;
     const endY = bobY + dy;
