@@ -37,8 +37,8 @@ importers:
         specifier: 6.0.1
         version: 6.0.1(vite@8.0.3(@types/node@24.12.0)(jiti@2.6.1))
       mathjax:
-        specifier: 4.1.1
-        version: 4.1.1
+        specifier: 4.1.2
+        version: 4.1.2
       oxc-config-hope:
         specifier: 0.0.11
         version: 0.0.11(oxfmt@0.42.0)(oxlint-tsgolint@0.17.4)(oxlint@1.57.0(oxlint-tsgolint@0.17.4))
@@ -91,8 +91,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@mathjax/mathjax-newcm-font@4.1.1':
-    resolution: {integrity: sha512-LeV5AWzoR7k/k2tg5mW0Ad3Jr9oK9guW/zBUIP8aoiIZcZIhvAV9dlbtUSqSe1wgEBUP1KOcJXcrE/NxOqkxlQ==}
+  '@mathjax/mathjax-newcm-font@4.1.2':
+    resolution: {integrity: sha512-lZHMjNP2XbABHA3kVn40rbse5ERUeMEmrGH03qLkCwxq4/5Z/eNLr0akw1MmQcqTwCbvkx1BFcmJ7RCfbRlw3Q==}
 
   '@mr-hope/tsconfig@0.0.3':
     resolution: {integrity: sha512-dpgwNf6puCRKL+JiR1CIXxlpon4eM/0yZN0c6W2riE4St/A+hu+GdbpLD9tgsGQw3E9abKj98mDTapt29Yg01g==}
@@ -756,8 +756,8 @@ packages:
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
-  mathjax@4.1.1:
-    resolution: {integrity: sha512-NyvA8c39LUUM/m+oCg7sfA13hmw7yGkre5kiRWN9qzChCyhce39lecnbjgMA/oEUgq9Vyetk6u78apwcIXpW/A==}
+  mathjax@4.1.2:
+    resolution: {integrity: sha512-EQDS8xBpVg179BXoLeZ9JlwUFftOC5qylw20UlAMDhrTuooENigOocY79aNkkFSyvj/AST/89ZAo12+r5bPI4w==}
 
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
@@ -961,7 +961,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@mathjax/mathjax-newcm-font@4.1.1': {}
+  '@mathjax/mathjax-newcm-font@4.1.2': {}
 
   '@mr-hope/tsconfig@0.0.3(typescript@6.0.2)':
     dependencies:
@@ -1369,9 +1369,9 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  mathjax@4.1.1:
+  mathjax@4.1.2:
     dependencies:
-      '@mathjax/mathjax-newcm-font': 4.1.1
+      '@mathjax/mathjax-newcm-font': 4.1.2
 
   nanoid@3.3.11: {}
 
