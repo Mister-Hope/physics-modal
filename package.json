@@ -29,7 +29,7 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
     "mathjax": "4.1.1",
-    "oxc-config-hope": "0.0.11",
+    "oxc-config-hope": "0.3.5",
     "oxfmt": "0.42.0",
     "oxlint": "1.57.0",
     "oxlint-tsgolint": "0.17.4",
