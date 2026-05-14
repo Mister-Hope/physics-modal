@@ -149,21 +149,13 @@ const SimulationCanvas: FC<SimulationCanvasProps> = ({ state, physics }) => {
 
       ctx.fillStyle = "#475569";
 
-      if (isLeft) {
-        ctx.fillRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
-        ctx.strokeRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
-        const flangeX = cx + 10;
+      ctx.fillRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
+      ctx.strokeRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
 
-        ctx.fillRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
-        ctx.strokeRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
-      } else {
-        ctx.fillRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
-        ctx.strokeRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
-        const flangeX = cx - 10 - wheelFlangeWidth;
+      const flangeX = isLeft ? cx + 10 : cx - 10 - wheelFlangeWidth;
 
-        ctx.fillRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
-        ctx.strokeRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
-      }
+      ctx.fillRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
+      ctx.strokeRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
     };
 
     drawWheel(0, true);

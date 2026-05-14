@@ -438,7 +438,7 @@ export const PendulumSimulation: FC<PendulumSimulationProps> = ({
     }
 
     return (): void => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (animationRef.current != null) cancelAnimationFrame(animationRef.current);
       removeResize?.();
     };
   }, [height, pendulums, isPlaying, angularVelocity]);

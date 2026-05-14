@@ -187,7 +187,7 @@ const App: FC = () => {
     requestRef.current = requestAnimationFrame(animate);
 
     return (): void => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      if (requestRef.current != null) cancelAnimationFrame(requestRef.current);
     };
   }, [animate]);
 

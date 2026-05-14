@@ -6,9 +6,7 @@ declare global {
     typesetPromise?: (elements?: Element[]) => Promise<void>;
   }
 
-  interface Window {
-    MathJax?: MathJaxStatic;
-  }
+  var MathJax: MathJaxStatic | undefined;
 }
 
 interface LatexProps {
@@ -39,7 +37,7 @@ export const Latex: FC<LatexProps> = memo(({ children, latex, block, className, 
     if (el) {
       const renderMath = async (): Promise<void> => {
         // Wait for MathJax to load if it hasn't yet
-        if (!window.MathJax?.typesetPromise) {
+        if (!globalThis.MathJax?.typesetPromise) {
           setTimeout(() => {
             if (isMounted) void renderMath();
           }, 200);
@@ -54,7 +52,7 @@ export const Latex: FC<LatexProps> = memo(({ children, latex, block, className, 
         el.style.visibility = "hidden"; // Hide until rendered to prevent flash
 
         try {
-          await window.MathJax.typesetPromise([el]);
+          await globalThis.MathJax.typesetPromise([el]);
 
           if (isMounted) {
             el.style.visibility = "visible";
@@ -77,6 +75,7 @@ export const Latex: FC<LatexProps> = memo(({ children, latex, block, className, 
             }
           }
         } catch (err) {
+          // oxlint-disable-next-line no-console
           console.warn("MathJax render error:", err);
 
           if (isMounted) {

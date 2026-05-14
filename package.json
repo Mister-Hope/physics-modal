@@ -17,26 +17,37 @@
     "train-turn:preview": "vite preview --outDir train-turn/dist"
   },
   "dependencies": {
-    "lucide-react": "1.8.0",
-    "react": "19.2.5",
-    "react-dom": "19.2.5"
+    "lucide-react": "1.14.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
   },
   "devDependencies": {
-    "@mr-hope/tsconfig": "0.0.3",
-    "@tailwindcss/vite": "4.2.2",
-    "@types/node": "24.12.2",
+    "@mr-hope/tsconfig": "0.0.4",
+    "@tailwindcss/vite": "4.3.0",
+    "@types/node": "24.12.4",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
-    "mathjax": "4.1.1",
-    "oxc-config-hope": "0.3.0",
-    "oxfmt": "0.45.0",
-    "oxlint": "1.60.0",
-    "oxlint-tsgolint": "0.21.1",
-    "tailwindcss": "4.2.2",
+    "mathjax": "4.1.2",
+    "oxc-config-hope": "0.3.5",
+    "oxfmt": "0.49.0",
+    "oxlint": "1.64.0",
+    "oxlint-tsgolint": "0.22.1",
+    "tailwindcss": "4.3.0",
     "typescript": "6.0.3",
-    "vite": "8.0.8",
+    "vite": "8.0.12",
     "vite-plugin-static-copy": "4.1.0"
   },
-  "packageManager": "pnpm@10.33.0"
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.1.1",
+      "onFail": "download"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "^24.15.0",
+      "onFail": "error"
+    }
+  }
 }
