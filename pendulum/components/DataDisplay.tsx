@@ -86,9 +86,10 @@ export const DataDisplay: FC<DataDisplayProps> = ({ state, params }) => {
   const aN = params.length * (state.omega * state.omega);
 
   // Total Acceleration
-  const a = Math.sqrt(aT * aT + aN * aN);
+  const a = Math.hypot(aT, aN);
 
   // Velocity: v = L * omega
+  // oxlint-disable-next-line id-length
   const v = Math.abs(state.omega * params.length);
 
   // Tension: T = m(g*cos(theta) + a_n)

@@ -35,8 +35,8 @@ const App: FC = () => {
   const [mode, setMode] = useState<SimulationMode>(SimulationMode.Paused);
   const [vectors, setVectors] = useState<VectorConfig>(INITIAL_VECTORS);
 
-  const requestRef = useRef<number | undefined>();
-  const lastTimeRef = useRef<number | undefined>();
+  const requestRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number | null>(null);
   const accumulatorRef = useRef<number>(0);
 
   // Use a Ref to store the latest physics state.
@@ -55,7 +55,7 @@ const App: FC = () => {
     stateRef.current = startState;
     setState(startState);
     accumulatorRef.current = 0;
-    lastTimeRef.current = undefined;
+    lastTimeRef.current = null;
   }, [params.initialAngle]);
 
   // Live Update: Whenever the Max Angle (initialAngle) slider changes,
@@ -79,7 +79,6 @@ const App: FC = () => {
 
       // Define the state derivatives: dTheta/dt = omega, dOmega/dt = -g/L * sin(theta)
       const evaluateDerivatives = (
-        t: number,
         th: number,
         om: number,
       ): {
@@ -91,24 +90,16 @@ const App: FC = () => {
       });
 
       // k1
-      const k1 = evaluateDerivatives(0, theta, omega);
+      const k1 = evaluateDerivatives(theta, omega);
 
       // k2
-      const k2 = evaluateDerivatives(
-        0 + dt * 0.5,
-        theta + k1.dTheta * dt * 0.5,
-        omega + k1.dOmega * dt * 0.5,
-      );
+      const k2 = evaluateDerivatives(theta + k1.dTheta * dt * 0.5, omega + k1.dOmega * dt * 0.5);
 
       // k3
-      const k3 = evaluateDerivatives(
-        0 + dt * 0.5,
-        theta + k2.dTheta * dt * 0.5,
-        omega + k2.dOmega * dt * 0.5,
-      );
+      const k3 = evaluateDerivatives(theta + k2.dTheta * dt * 0.5, omega + k2.dOmega * dt * 0.5);
 
       // k4
-      const k4 = evaluateDerivatives(0 + dt, theta + k3.dTheta * dt, omega + k3.dOmega * dt);
+      const k4 = evaluateDerivatives(theta + k3.dTheta * dt, omega + k3.dOmega * dt);
 
       // Combine
       const newTheta = theta + (dt / 6) * (k1.dTheta + 2 * k2.dTheta + 2 * k3.dTheta + k4.dTheta);
@@ -129,7 +120,7 @@ const App: FC = () => {
 
   const animate = useCallback(
     (time: number) => {
-      if (lastTimeRef.current !== undefined) {
+      if (lastTimeRef.current != null) {
         // Calculate real delta time in seconds
         const frameTime = Math.min((time - lastTimeRef.current) / 1000, 0.1); // Clamp to 0.1s
 
@@ -137,7 +128,10 @@ const App: FC = () => {
         accumulatorRef.current += frameTime;
 
         // Only process physics if not paused
-        if (mode !== SimulationMode.Paused) {
+        if (mode === SimulationMode.Paused) {
+          // If paused, just reset accumulator to avoid jump on resume
+          accumulatorRef.current = 0;
+        } else {
           let active = true;
           // Work on the ref state directly
           let nextState = { ...stateRef.current };
@@ -152,30 +146,27 @@ const App: FC = () => {
             accumulatorRef.current -= DT;
 
             // Check Pause Conditions
-            if (mode === SimulationMode.PauseAtBottom) {
-              // Detect zero crossing of Theta
-              if (
-                (prevState.theta > 0 && nextState.theta <= 0) ||
-                (prevState.theta < 0 && nextState.theta >= 0)
-              ) {
-                setMode(SimulationMode.Paused);
-                nextState.theta = 0;
-                active = false;
-              }
+            // Detect zero crossing of Theta
+            if (
+              mode === SimulationMode.PauseAtBottom &&
+              ((prevState.theta > 0 && nextState.theta <= 0) ||
+                (prevState.theta < 0 && nextState.theta >= 0))
+            ) {
+              setMode(SimulationMode.Paused);
+              nextState.theta = 0;
+              active = false;
             }
 
-            if (mode === SimulationMode.PauseAtTop) {
-              // Detect velocity zero crossing (Turning point) on the Right side (theta > 0)
-              if (prevState.theta > 0.1) {
-                if (
-                  (prevState.omega > 0 && nextState.omega <= 0) ||
-                  (prevState.omega < 0 && nextState.omega >= 0)
-                ) {
-                  setMode(SimulationMode.Paused);
-                  nextState.omega = 0;
-                  active = false;
-                }
-              }
+            // Detect velocity zero crossing (Turning point) on the Right side (theta > 0)
+            if (
+              mode === SimulationMode.PauseAtTop &&
+              prevState.theta > 0.1 &&
+              ((prevState.omega > 0 && nextState.omega <= 0) ||
+                (prevState.omega < 0 && nextState.omega >= 0))
+            ) {
+              setMode(SimulationMode.Paused);
+              nextState.omega = 0;
+              active = false;
             }
           }
 
@@ -183,9 +174,6 @@ const App: FC = () => {
           stateRef.current = nextState;
           // Trigger React render with the new state
           setState(nextState);
-        } else {
-          // If paused, just reset accumulator to avoid jump on resume
-          accumulatorRef.current = 0;
         }
       }
 
@@ -199,7 +187,7 @@ const App: FC = () => {
     requestRef.current = requestAnimationFrame(animate);
 
     return (): void => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      if (requestRef.current != null) cancelAnimationFrame(requestRef.current);
     };
   }, [animate]);
 

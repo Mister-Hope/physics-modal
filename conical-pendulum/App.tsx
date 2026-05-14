@@ -21,7 +21,7 @@ export default function App(): ReactElement {
   const period = useMemo(() => (2 * Math.PI) / angularVelocity, [angularVelocity]);
 
   // Determine the maximum allowable height based on the shortest string
-  const minLength = Math.min(...pendulums.map((p) => p.length));
+  const minLength = Math.min(...pendulums.map((pendulum) => pendulum.length));
   const maxHeight = minLength * 0.99; // Cap extremely close to L to allow low theta
 
   // Auto-correct height if lengths change to be smaller than current height
@@ -37,10 +37,10 @@ export default function App(): ReactElement {
 
   const handlePendulumUpdate = (id: number, updates: Partial<PendulumConfig>): void => {
     setPendulums((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
+      prev.map((pendulum) => {
+        if (pendulum.id !== id) return pendulum;
 
-        return { ...p, ...updates };
+        return { ...pendulum, ...updates };
       }),
     );
   };

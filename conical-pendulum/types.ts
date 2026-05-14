@@ -7,5 +7,6 @@ export interface PendulumConfig {
 }
 
 export interface SimulationState {
+  // oxlint-disable-next-line id-length
   t: number; // accumulated time
 }

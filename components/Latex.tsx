@@ -6,9 +6,7 @@ declare global {
     typesetPromise?: (elements?: Element[]) => Promise<void>;
   }
 
-  interface Window {
-    MathJax?: MathJaxStatic;
-  }
+  var MathJax: MathJaxStatic | undefined;
 }
 
 interface LatexProps {
@@ -25,8 +23,8 @@ interface LatexProps {
 }
 
 /**
- * A unified LaTeX component that uses MathJax to render mathematical formulas.
- * Supports both inline and block modes, and custom coloring.
+ * A unified LaTeX component that uses MathJax to render mathematical formulas. Supports both inline
+ * and block modes, and custom coloring.
  */
 export const Latex: FC<LatexProps> = memo(({ children, latex, block, className, color }) => {
   const containerRef = useRef<HTMLSpanElement>(null);
@@ -36,58 +34,59 @@ export const Latex: FC<LatexProps> = memo(({ children, latex, block, className, 
     let isMounted = true;
     const el = containerRef.current;
 
-    if (!el) return;
+    if (el) {
+      const renderMath = async (): Promise<void> => {
+        // Wait for MathJax to load if it hasn't yet
+        if (!globalThis.MathJax?.typesetPromise) {
+          setTimeout(() => {
+            if (isMounted) void renderMath();
+          }, 200);
 
-    const renderMath = async (): Promise<void> => {
-      // Wait for MathJax to load if it hasn't yet
-      if (!window.MathJax?.typesetPromise) {
-        setTimeout(() => {
-          if (isMounted) void renderMath();
-        }, 200);
+          return;
+        }
 
-        return;
-      }
+        // Set the content with appropriate delimiters for MathJax
+        const delimiter = block ? "$$" : "$";
 
-      // Set the content with appropriate delimiters for MathJax
-      const delimiter = block ? "$$" : "$";
+        el.textContent = `${delimiter}${content}${delimiter}`;
+        el.style.visibility = "hidden"; // Hide until rendered to prevent flash
 
-      el.textContent = `${delimiter}${content}${delimiter}`;
-      el.style.visibility = "hidden"; // Hide until rendered to prevent flash
+        try {
+          await globalThis.MathJax.typesetPromise([el]);
 
-      try {
-        await window.MathJax.typesetPromise([el]);
+          if (isMounted) {
+            el.style.visibility = "visible";
 
-        if (isMounted) {
-          el.style.visibility = "visible";
+            // Apply color to SVG if provided
+            if (color) {
+              const svg = el.querySelector("svg");
 
-          // Apply color to SVG if provided
-          if (color) {
-            const svg = el.querySelector("svg");
+              if (svg) {
+                svg.style.fill = color;
+                svg.style.color = color;
 
-            if (svg) {
-              svg.style.fill = color;
-              svg.style.color = color;
+                // Override internal path fills to match the requested color
+                const paths = svg.querySelectorAll("path, rect, polygon");
 
-              // Override internal path fills to match the requested color
-              const paths = svg.querySelectorAll("path, rect, polygon");
-
-              paths.forEach((p) => {
-                (p as SVGElement).style.fill = color;
-              });
+                paths.forEach((path) => {
+                  (path as SVGElement).style.fill = color;
+                });
+              }
             }
           }
-        }
-      } catch (err) {
-        console.warn("MathJax render error:", err);
+        } catch (err) {
+          // oxlint-disable-next-line no-console
+          console.warn("MathJax render error:", err);
 
-        if (isMounted) {
-          el.textContent = content; // Fallback to raw text
-          el.style.visibility = "visible";
+          if (isMounted) {
+            el.textContent = content; // Fallback to raw text
+            el.style.visibility = "visible";
+          }
         }
-      }
-    };
+      };
 
-    void renderMath();
+      void renderMath();
+    }
 
     return (): void => {
       isMounted = false;
@@ -100,11 +99,9 @@ export const Latex: FC<LatexProps> = memo(({ children, latex, block, className, 
       className={className}
       style={{
         display: block ? "block" : "inline-block",
-        verticalAlign: block ? undefined : "middle",
-        color: color,
+        color,
         // Vertical alignment adjustment for inline math
-        position: block ? undefined : "relative",
-        bottom: block ? undefined : "0.125em",
+        ...(block ? {} : { verticalAlign: "middle", position: "relative", bottom: "0.125em" }),
       }}
     />
   );
