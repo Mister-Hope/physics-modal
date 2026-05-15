@@ -7,6 +7,7 @@
     "conical-pendulum:build": "vite build conical-pendulum",
     "conical-pendulum:dev": "vite dev conical-pendulum",
     "conical-pendulum:preview": "vite preview --outDir conical-pendulum/dist",
+    "build": "unrun scripts/build.ts",
     "lint": "oxlint --fix --deny-warnings --report-unused-disable-directives && oxfmt",
     "lint:check": "oxlint --deny-warnings --report-unused-disable-directives && oxfmt --check",
     "pendulum:build": "vite build pendulum",
@@ -35,6 +36,7 @@
     "oxlint-tsgolint": "0.22.1",
     "tailwindcss": "4.3.0",
     "typescript": "6.0.3",
+    "unrun": "^0.3.0",
     "vite": "8.0.12",
     "vite-plugin-static-copy": "4.1.0"
   },
