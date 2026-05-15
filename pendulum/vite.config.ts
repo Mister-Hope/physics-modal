@@ -1,13 +1,9 @@
-import { createRequire } from "node:module";
 import path from "node:path";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig, normalizePath } from "vite";
+import { defineConfig } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
-
-const require = createRequire(import.meta.url);
-const mathjaxDir = path.dirname(require.resolve("mathjax/package.json"));
 
 export default defineConfig({
   base: "",
@@ -24,8 +20,9 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: normalizePath(path.join(mathjaxDir, "*")),
+          src: "../node_modules/mathjax/**/*",
           dest: "lib/mathjax",
+          rename: { stripBase: 2 },
         },
       ],
     }),
@@ -33,7 +30,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "."),
-      "/lib/mathjax": mathjaxDir,
     },
   },
 });
