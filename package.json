@@ -32,7 +32,7 @@
     "mathjax": "4.1.2",
     "oxc-config-hope": "0.3.5",
     "oxfmt": "0.50.0",
-    "oxlint": "1.64.0",
+    "oxlint": "1.65.0",
     "oxlint-tsgolint": "0.22.1",
     "tailwindcss": "4.3.0",
     "typescript": "6.0.3",
