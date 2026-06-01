@@ -18,7 +18,7 @@
     "train-turn:preview": "vite preview --outDir train-turn/dist"
   },
   "dependencies": {
-    "lucide-react": "1.14.0",
+    "lucide-react": "1.17.0",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },
