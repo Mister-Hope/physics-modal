@@ -1,11 +1,10 @@
 {
   "extends": "@mr-hope/tsconfig/web.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     },
     "types": ["node", "vite/client"]
   },
-  "include": ["**/*.ts", "**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.vue"]
 }

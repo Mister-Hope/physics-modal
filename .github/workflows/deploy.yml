@@ -29,23 +29,10 @@ jobs:
         run: pnpm ci
 
       - name: Run build
-        run: |-
-          pnpm run conical-pendulum:build
-          pnpm run pendulum:build
-          pnpm run train-turn:build
+        run: pnpm build
 
       - name: Run linter
-        run: pnpm run lint
-
-      - name: Combine build outputs
-        run: |
-          mkdir -p dist
-          mkdir -p dist/conical-pendulum
-          mkdir -p dist/pendulum
-          mkdir -p dist/train-turn
-          cp -r conical-pendulum/dist/* dist/conical-pendulum
-          cp -r pendulum/dist/* dist/pendulum
-          cp -r train-turn/dist/* dist/train-turn
+        run: pnpm lint
 
       - name: Deploy docs
         uses: JamesIves/github-pages-deploy-action@v4

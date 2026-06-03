@@ -1,104 +1,33 @@
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>物理模型演示</title>
-    <style>
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-
-      body {
-        min-height: 100vh;
-        background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
-        color: #e2e8f0;
-        font-family: "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans SC", sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 3rem 1.5rem;
-      }
-
-      header {
-        text-align: center;
-        margin-bottom: 3rem;
-      }
-
-      header h1 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #60a5fa, #a78bfa);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 0.5rem;
-      }
-
-      header p {
-        color: #94a3b8;
-        font-size: 1.1rem;
-      }
-
-      main {
-        width: 100%;
-        max-width: 900px;
-      }
-
-      .model-list {
-        list-style: none;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 1.5rem;
-      }
-
-      .model-list a {
-        display: block;
-        padding: 1.75rem;
-        background: rgba(30, 41, 59, 0.7);
-        border: 1px solid rgba(71, 85, 105, 0.5);
-        border-radius: 0.75rem;
-        text-decoration: none;
-        color: inherit;
-        transition:
-          border-color 0.2s,
-          background 0.2s,
-          transform 0.15s;
-      }
-
-      .model-list a:hover {
-        border-color: #60a5fa;
-        background: rgba(30, 41, 59, 0.95);
-        transform: translateY(-2px);
-      }
-
-      .model-list h2 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        color: #f1f5f9;
-      }
-
-      .model-list p {
-        font-size: 0.9rem;
-        color: #94a3b8;
-        line-height: 1.5;
-      }
-    </style>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+        },
+        svg: {
+          fontCache: "global",
+        },
+        startup: {
+          typeset: false,
+        },
+      };
+    </script>
+    <script
+      id="MathJax-script"
+      async
+      src="./lib/mathjax/tex-svg.js"
+    ></script>
   </head>
   <body>
-    <header>
-      <h1>物理模型演示</h1>
-      <p>交互式物理模拟集合</p>
-    </header>
-    <main>
-      <ul class="model-list">
-        <!-- modal-list -->
-      </ul>
-    </main>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
