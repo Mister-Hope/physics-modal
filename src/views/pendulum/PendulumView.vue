@@ -95,7 +95,7 @@ const updatePhysics = (
     theta: newTheta,
     omega: newOmega,
     alpha: newAlpha,
-    time: currentState.time + dt,
+    time: currentState.time + timeStep,
   };
 };
 

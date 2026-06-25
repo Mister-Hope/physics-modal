@@ -63,6 +63,13 @@ useRafFn(({ timestamp }) => {
   const ctx = canvas?.getContext("2d");
   if (!canvas || !ctx) return;
 
+  // Ensure canvas matches parent on first frame
+  const parent = canvas.parentElement;
+  if (parent && (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight)) {
+    canvas.width = parent.clientWidth;
+    canvas.height = parent.clientHeight;
+  }
+
   if (!lastFrameTime) lastFrameTime = timestamp;
   const deltaTime = (timestamp - lastFrameTime) / 1000;
   lastFrameTime = timestamp;
@@ -300,7 +307,7 @@ useRafFn(({ timestamp }) => {
     ctx.font = `bold ${Math.max(20, 16 * obj.pos.scale)}px sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const labelText = `mass=${obj.config.mass}kg`;
+    const labelText = `m=${obj.config.mass}kg`;
     const metrics = ctx.measureText(labelText);
     ctx.fillStyle = "rgba(0,0,0,0.7)";
     ctx.fillRect(obj.pos.x - metrics.width / 2 - 4, obj.pos.y + bobSize + 5, metrics.width + 8, 20);

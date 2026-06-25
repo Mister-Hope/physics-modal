@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useEventListener, useMounted } from "@vueuse/core";
+import { useEventListener, watchImmediate } from "@vueuse/core";
 import { ref, watch } from "vue";
 
 import type { PhysicsResult, SimulationState } from "../types";
@@ -297,12 +297,8 @@ const handleResize = (): void => {
 
 useEventListener(globalThis, "resize", handleResize);
 
-useMounted(() => {
-  draw();
-});
-
-// Re-draw whenever props change
-watch(
+// Re-draw on mount and whenever props change
+watchImmediate(
   () => [state, physics],
   () => {
     requestAnimationFrame(() => draw());
