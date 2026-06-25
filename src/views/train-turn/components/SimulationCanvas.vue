@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useEventListener, watchImmediate } from "@vueuse/core";
+import { ref, watch } from "vue";
+
 import type { PhysicsResult, SimulationState } from "../types";
 
 interface Props {
@@ -8,14 +10,12 @@ interface Props {
   darkMode?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  darkMode: false,
-});
+const { state, physics, darkMode = false } = defineProps<Props>();
 
 const canvasRef = ref<HTMLCanvasElement>();
 const animationRef: number | null = null;
 
-function draw(): void {
+const draw = (): void => {
   const canvas = canvasRef.value;
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -28,10 +28,10 @@ function draw(): void {
   ctx.scale(dpr, dpr);
 
   const { width } = rect;
-  const {height} = rect;
+  const { height } = rect;
   ctx.clearRect(0, 0, width, height);
 
-  const isDark = props.darkMode;
+  const isDark = darkMode;
   const bgColor = isDark ? "#0f172a" : "#f8fafc";
   const groundColor = isDark ? "#334155" : "#e2e8f0";
 
@@ -65,7 +65,7 @@ function draw(): void {
 
   const pivotX = centerX - trackWidth / 2;
   const pivotY = groundY;
-  const angleRad = (props.state.angle * Math.PI) / 180;
+  const angleRad = (state.angle * Math.PI) / 180;
   const cosA = Math.cos(angleRad);
   const sinA = Math.sin(angleRad);
 
@@ -117,15 +117,25 @@ function draw(): void {
   ctx.strokeRect(0, axleCenterY - axleDiameter / 2, trackWidth, axleDiameter);
 
   // Wheels
-  const drawWheel = (cx: number, isLeft: boolean): void => {
+  const drawWheel = (wheelCenterX: number, isLeft: boolean): void => {
     const treadTop = axleCenterY - wheelTreadRadius;
     const treadBottom = axleCenterY + wheelTreadRadius;
     const flangeTop = axleCenterY - wheelFlangeRadius;
     const flangeBottom = axleCenterY + wheelFlangeRadius;
     ctx.fillStyle = "#475569";
-    ctx.fillRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
-    ctx.strokeRect(cx - wheelTreadWidth / 2, treadTop, wheelTreadWidth, treadBottom - treadTop);
-    const flangeX = isLeft ? cx + 10 : cx - 10 - wheelFlangeWidth;
+    ctx.fillRect(
+      wheelCenterX - wheelTreadWidth / 2,
+      treadTop,
+      wheelTreadWidth,
+      treadBottom - treadTop,
+    );
+    ctx.strokeRect(
+      wheelCenterX - wheelTreadWidth / 2,
+      treadTop,
+      wheelTreadWidth,
+      treadBottom - treadTop,
+    );
+    const flangeX = isLeft ? wheelCenterX + 10 : wheelCenterX - 10 - wheelFlangeWidth;
     ctx.fillRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
     ctx.strokeRect(flangeX, flangeTop, wheelFlangeWidth, flangeBottom - flangeTop);
   };
@@ -167,11 +177,15 @@ function draw(): void {
   ctx.stroke();
 
   // Forces
-  if (props.state.forceMode !== "none") {
+  if (state.forceMode !== "none") {
+    // eslint-disable-next-line max-params
     const drawArrow = (
-      fromX: number, fromY: number,
-      vecX: number, vecY: number,
-      color: string, label: string,
+      fromX: number,
+      fromY: number,
+      vecX: number,
+      vecY: number,
+      color: string,
+      label: string,
       isDashed = false,
     ): void => {
       const headLength = 15;
@@ -194,8 +208,14 @@ function draw(): void {
 
       ctx.beginPath();
       ctx.moveTo(toX, toY);
-      ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
-      ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+      ctx.lineTo(
+        toX - headLength * Math.cos(angle - Math.PI / 6),
+        toY - headLength * Math.sin(angle - Math.PI / 6),
+      );
+      ctx.lineTo(
+        toX - headLength * Math.cos(angle + Math.PI / 6),
+        toY - headLength * Math.sin(angle + Math.PI / 6),
+      );
       ctx.fill();
 
       ctx.font = "bold 20px sans-serif";
@@ -208,19 +228,19 @@ function draw(): void {
       ctx.fillText(label, textX, textY);
     };
 
-    const isConcurrent = props.state.forceMode === "concurrent";
+    const isConcurrent = state.forceMode === "concurrent";
 
-    const fnMag = props.physics.normalForce * forceScale;
+    const fnMag = physics.normalForce * forceScale;
     const fnOriginX = isConcurrent ? comX : trackWidth / 2;
     const fnOriginY = isConcurrent ? comY : axleCenterY;
     drawArrow(fnOriginX, fnOriginY, 0, -fnMag, "#9333ea", "Fn");
 
-    const gMag = props.physics.gravity * forceScale;
-    const gX = gMag * -Math.sin(angleRad);
-    const gY = gMag * Math.cos(angleRad);
-    drawArrow(comX, comY, gX, gY, "#000000", "G");
+    const gMag = physics.gravity * forceScale;
+    const gravityX = gMag * -Math.sin(angleRad);
+    const gravityY = gMag * Math.cos(angleRad);
+    drawArrow(comX, comY, gravityX, gravityY, "#000000", "G");
 
-    const fNewtons = props.physics.flangeForce;
+    const fNewtons = physics.flangeForce;
     if (Math.abs(fNewtons) > 100) {
       const fMag = Math.abs(fNewtons) * forceScale;
       const color = fNewtons > 0 ? "#ef4444" : "#f97316";
@@ -234,14 +254,14 @@ function draw(): void {
       drawArrow(fOriginX, fOriginY, fVecX, 0, color, "F");
     }
 
-    const netMag = props.physics.netForce * forceScale;
+    const netMag = physics.netForce * forceScale;
     const netVecX = netMag * -Math.cos(angleRad);
     const netVecY = netMag * -Math.sin(angleRad);
     drawArrow(comX, comY, netVecX, netVecY, "#22c55e", "F向", true);
   }
 
   // Plane indicator
-  if (props.state.showPlane) {
+  if (state.showPlane) {
     ctx.save();
     ctx.strokeStyle = "#0f172a";
     ctx.setLineDash([6, 4]);
@@ -269,24 +289,17 @@ function draw(): void {
   }
 
   ctx.restore();
-}
+};
 
-function handleResize(): void {
+const handleResize = (): void => {
   draw();
-}
+};
 
-onMounted(() => {
-  window.addEventListener("resize", handleResize);
-  draw();
-});
+useEventListener(globalThis, "resize", handleResize);
 
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", handleResize);
-});
-
-// Re-draw whenever props change
-watch(
-  () => [props.state, props.physics],
+// Re-draw on mount and whenever props change
+watchImmediate(
+  () => [state, physics],
   () => {
     requestAnimationFrame(() => draw());
   },
@@ -295,7 +308,9 @@ watch(
 </script>
 
 <template>
-  <div class="w-full h-full bg-slate-50 rounded-xl overflow-hidden shadow-inner border border-slate-200">
+  <div
+    class="w-full h-full bg-slate-50 rounded-xl overflow-hidden shadow-inner border border-slate-200"
+  >
     <canvas ref="canvasRef" class="w-full h-full block" />
   </div>
 </template>

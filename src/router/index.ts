@@ -1,9 +1,9 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import HomeView from "@/views/Home.vue";
 
 export const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes: [
     {
       path: "/",
@@ -24,6 +24,16 @@ export const router = createRouter({
       path: "/train-turn",
       name: "train-turn",
       component: () => import("@/views/train-turn/TrainTurnView.vue"),
+    },
+    {
+      path: "/oscilloscope",
+      name: "oscilloscope",
+      component: () => import("@/views/oscilloscope/OscilloscopeView.vue"),
+    },
+    {
+      path: "/electric-field",
+      name: "electric-field",
+      component: () => import("@/views/electric-field/ElectricFieldView.vue"),
     },
   ],
 });

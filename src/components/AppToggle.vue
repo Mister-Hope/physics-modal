@@ -5,10 +5,7 @@ interface Props {
   disabled?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
-  label: "",
-  disabled: false,
-});
+const { label = "", disabled = false } = defineProps<Props>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];

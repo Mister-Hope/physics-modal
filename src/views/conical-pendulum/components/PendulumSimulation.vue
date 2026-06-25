@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { useEventListener, useMounted, useRafFn } from "@vueuse/core";
+import { ref } from "vue";
+
 import { GRAVITY } from "../constants";
 import type { PendulumConfig } from "../types";
 
@@ -10,13 +12,13 @@ interface Props {
   angularVelocity: number;
 }
 
-const props = defineProps<Props>();
+const { height, pendulums, isPlaying, angularVelocity } = defineProps<Props>();
 
 const canvasRef = ref<HTMLCanvasElement>();
 const isDragging = ref(false);
 const lastMousePos = ref({ x: 0, y: 0 });
 
-let animationRef: number | null = null;
+const animationRef: number | null = null;
 let timeAccum = 0;
 let lastFrameTime = 0;
 
@@ -26,14 +28,15 @@ const camera = {
   zoom: 1,
 };
 
-function project(
+// eslint-disable-next-line max-params
+const project = (
   x: number,
   y: number,
   z: number,
   centerX: number,
   centerY: number,
   metersToPixels: number,
-): { x: number; y: number; scale: number; zDepth: number } {
+): { x: number; y: number; scale: number; zDepth: number } => {
   const cosYaw = Math.cos(camera.yaw);
   const sinYaw = Math.sin(camera.yaw);
   const x1 = x * cosYaw - z * sinYaw;
@@ -53,20 +56,27 @@ function project(
     scale,
     zDepth: z2,
   };
-}
+};
 
-function render(timestamp: number): void {
+useRafFn(({ timestamp }) => {
   const canvas = canvasRef.value;
   const ctx = canvas?.getContext("2d");
   if (!canvas || !ctx) return;
+
+  // Ensure canvas matches parent on first frame
+  const parent = canvas.parentElement;
+  if (parent && (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight)) {
+    canvas.width = parent.clientWidth;
+    canvas.height = parent.clientHeight;
+  }
 
   if (!lastFrameTime) lastFrameTime = timestamp;
   const deltaTime = (timestamp - lastFrameTime) / 1000;
   lastFrameTime = timestamp;
 
-  if (props.isPlaying) timeAccum += deltaTime;
+  if (isPlaying) timeAccum += deltaTime;
 
-  const currentAngle = timeAccum * props.angularVelocity;
+  const currentAngle = timeAccum * angularVelocity;
   const { width } = canvas;
   const heightPx = canvas.height;
   const centerX = width / 2;
@@ -77,7 +87,7 @@ function render(timestamp: number): void {
   ctx.fillRect(0, 0, width, heightPx);
 
   const origin = project(0, 0, 0, centerX, centerY, metersToPixels);
-  const floorY = props.height;
+  const floorY = height;
   const floorCenter = project(0, floorY, 0, centerX, centerY, metersToPixels);
 
   // Central axis (dashed)
@@ -96,12 +106,11 @@ function render(timestamp: number): void {
   ctx.arc(origin.x, origin.y, 8 * origin.scale, 0, Math.PI * 2);
   ctx.fill();
 
-  const objectsToRender = props.pendulums.map((pendulum) => {
-    // oxlint-disable-next-line id-length
-    const r = Math.sqrt(Math.max(0, pendulum.length * pendulum.length - props.height * props.height));
+  const objectsToRender = pendulums.map((pendulum) => {
+    const r = Math.sqrt(Math.max(0, pendulum.length * pendulum.length - height * height));
     const xPhys = r * Math.cos(currentAngle);
     const zPhys = r * Math.sin(currentAngle);
-    const yPhys = props.height;
+    const yPhys = height;
 
     const pos2D = project(xPhys, yPhys, zPhys, centerX, centerY, metersToPixels);
 
@@ -110,7 +119,9 @@ function render(timestamp: number): void {
     const precomputed: { x: number; y: number }[] = [];
     for (let a = 0; a <= Math.PI * 2; a += 0.1) {
       precomputed.push({ x: a, y: a });
-      pathPoints.push(project(r * Math.cos(a), props.height, r * Math.sin(a), centerX, centerY, metersToPixels));
+      pathPoints.push(
+        project(r * Math.cos(a), height, r * Math.sin(a), centerX, centerY, metersToPixels),
+      );
     }
 
     return {
@@ -129,9 +140,9 @@ function render(timestamp: number): void {
     ctx.beginPath();
     ctx.strokeStyle = `${obj.config.color}44`;
     ctx.lineWidth = 3 * obj.pos.scale;
-    obj.path.forEach((pt, i) => {
-      if (i === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
+    obj.path.forEach((point, i) => {
+      if (i === 0) ctx.moveTo(point.x, point.y);
+      else ctx.lineTo(point.x, point.y);
     });
     ctx.closePath();
     ctx.stroke();
@@ -147,8 +158,12 @@ function render(timestamp: number): void {
     // Bob
     const bobSize = (12 + obj.config.mass * 4) * obj.pos.scale;
     const grad = ctx.createRadialGradient(
-      obj.pos.x - bobSize / 3, obj.pos.y - bobSize / 3, bobSize / 4,
-      obj.pos.x, obj.pos.y, bobSize,
+      obj.pos.x - bobSize / 3,
+      obj.pos.y - bobSize / 3,
+      bobSize / 4,
+      obj.pos.x,
+      obj.pos.y,
+      bobSize,
     );
     grad.addColorStop(0, "#fff");
     grad.addColorStop(0.5, obj.config.color);
@@ -160,22 +175,35 @@ function render(timestamp: number): void {
 
     // Force analysis for first pendulum
     if (obj.config.id === 1) {
-      // oxlint-disable-next-line id-length
-      const m = obj.config.mass;
+      const { mass } = obj.config;
       const forceScale = 0.05;
-      const vectorGMag = m * GRAVITY * forceScale;
-      const vectorYMag = m * GRAVITY * forceScale;
+      const vectorGMag = mass * GRAVITY * forceScale;
+      const vectorYMag = mass * GRAVITY * forceScale;
       const distToCenter = Math.hypot(obj.phys.x, obj.phys.z);
-      const FnMag = m * props.angularVelocity ** 2 * obj.phys.r * forceScale;
+      const FnMag = mass * angularVelocity ** 2 * obj.phys.r * forceScale;
 
       // Draw forces using 3D line projection
+      // eslint-disable-next-line max-params
       const drawArrow3D = (
-        sx: number, sy: number, sz: number,
-        dx: number, dy: number, dz: number,
-        color: string, label: string, dashed = false,
+        startX: number,
+        startY: number,
+        startZ: number,
+        deltaX: number,
+        deltaY: number,
+        deltaZ: number,
+        color: string,
+        label: string,
+        dashed = false,
       ): void => {
-        const pStart = project(sx, sy, sz, centerX, centerY, metersToPixels);
-        const pEnd = project(sx + dx, sy + dy, sz + dz, centerX, centerY, metersToPixels);
+        const pStart = project(startX, startY, startZ, centerX, centerY, metersToPixels);
+        const pEnd = project(
+          startX + deltaX,
+          startY + deltaY,
+          startZ + deltaZ,
+          centerX,
+          centerY,
+          metersToPixels,
+        );
 
         ctx.beginPath();
         ctx.strokeStyle = color;
@@ -192,8 +220,14 @@ function render(timestamp: number): void {
         ctx.beginPath();
         ctx.fillStyle = color;
         ctx.moveTo(pEnd.x, pEnd.y);
-        ctx.lineTo(pEnd.x - headLen * Math.cos(angle - Math.PI / 6), pEnd.y - headLen * Math.sin(angle - Math.PI / 6));
-        ctx.lineTo(pEnd.x - headLen * Math.cos(angle + Math.PI / 6), pEnd.y - headLen * Math.sin(angle + Math.PI / 6));
+        ctx.lineTo(
+          pEnd.x - headLen * Math.cos(angle - Math.PI / 6),
+          pEnd.y - headLen * Math.sin(angle - Math.PI / 6),
+        );
+        ctx.lineTo(
+          pEnd.x - headLen * Math.cos(angle + Math.PI / 6),
+          pEnd.y - headLen * Math.sin(angle + Math.PI / 6),
+        );
         ctx.fill();
 
         if (label) {
@@ -207,15 +241,24 @@ function render(timestamp: number): void {
         }
       };
 
-      const drawDashed3D = (x1: number, y1: number, z1: number, x2: number, y2: number, z2: number, color: string): void => {
-        const p1 = project(x1, y1, z1, centerX, centerY, metersToPixels);
-        const p2 = project(x2, y2, z2, centerX, centerY, metersToPixels);
+      // eslint-disable-next-line max-params
+      const drawDashed3D = (
+        x1: number,
+        y1: number,
+        z1: number,
+        x2: number,
+        y2: number,
+        z2: number,
+        color: string,
+      ): void => {
+        const projStart = project(x1, y1, z1, centerX, centerY, metersToPixels);
+        const projEnd = project(x2, y2, z2, centerX, centerY, metersToPixels);
         ctx.beginPath();
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5 * p1.scale;
+        ctx.lineWidth = 1.5 * projStart.scale;
         ctx.setLineDash([4, 4]);
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
+        ctx.moveTo(projStart.x, projStart.y);
+        ctx.lineTo(projEnd.x, projEnd.y);
         ctx.stroke();
         ctx.setLineDash([]);
       };
@@ -226,10 +269,33 @@ function render(timestamp: number): void {
       if (distToCenter > 0.001) {
         const dirX = -obj.phys.x / distToCenter;
         const dirZ = -obj.phys.z / distToCenter;
-        drawArrow3D(obj.phys.x, obj.phys.y, obj.phys.z, dirX * FnMag, 0, dirZ * FnMag, "#eab308", "Fn", true);
-        drawArrow3D(obj.phys.x, obj.phys.y, obj.phys.z, dirX * FnMag, -vectorYMag, dirZ * FnMag, "#ef4444", "FT");
+        drawArrow3D(
+          obj.phys.x,
+          obj.phys.y,
+          obj.phys.z,
+          dirX * FnMag,
+          0,
+          dirZ * FnMag,
+          "#eab308",
+          "Fn",
+          true,
+        );
+        drawArrow3D(
+          obj.phys.x,
+          obj.phys.y,
+          obj.phys.z,
+          dirX * FnMag,
+          -vectorYMag,
+          dirZ * FnMag,
+          "#ef4444",
+          "FT",
+        );
 
-        const tipT = { x: obj.phys.x + dirX * FnMag, y: obj.phys.y - vectorYMag, z: obj.phys.z + dirZ * FnMag };
+        const tipT = {
+          x: obj.phys.x + dirX * FnMag,
+          y: obj.phys.y - vectorYMag,
+          z: obj.phys.z + dirZ * FnMag,
+        };
         const tipTy = { x: obj.phys.x, y: obj.phys.y - vectorYMag, z: obj.phys.z };
         const tipFn = { x: obj.phys.x + dirX * FnMag, y: obj.phys.y, z: obj.phys.z + dirZ * FnMag };
         drawDashed3D(tipTy.x, tipTy.y, tipTy.z, tipT.x, tipT.y, tipT.z, "#94a3b8");
@@ -248,44 +314,37 @@ function render(timestamp: number): void {
     ctx.fillStyle = "#fff";
     ctx.fillText(labelText, obj.pos.x, obj.pos.y + bobSize + 15);
   });
+});
 
-  animationRef = requestAnimationFrame(render);
-}
-
-function handleResize(): void {
+const handleResize = (): void => {
   if (canvasRef.value?.parentElement) {
     canvasRef.value.width = canvasRef.value.parentElement.clientWidth;
     canvasRef.value.height = canvasRef.value.parentElement.clientHeight;
   }
-}
+};
 
-function onMouseDown(event: MouseEvent): void {
+useEventListener(globalThis, "resize", handleResize);
+
+const onMouseDown = (event: MouseEvent): void => {
   isDragging.value = true;
   lastMousePos.value = { x: event.clientX, y: event.clientY };
-}
+};
 
-function onMouseMove(event: MouseEvent): void {
+const onMouseMove = (event: MouseEvent): void => {
   if (!isDragging.value) return;
   const deltaX = event.clientX - lastMousePos.value.x;
   const deltaY = event.clientY - lastMousePos.value.y;
   camera.yaw += deltaX * 0.01;
   camera.pitch = Math.max(-0.5, Math.min(1.5, camera.pitch + deltaY * 0.01));
   lastMousePos.value = { x: event.clientX, y: event.clientY };
-}
+};
 
-function onMouseUp(): void {
+const onMouseUp = (): void => {
   isDragging.value = false;
-}
+};
 
-onMounted(() => {
-  window.addEventListener("resize", handleResize);
+useMounted(() => {
   handleResize();
-  animationRef = requestAnimationFrame(render);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", handleResize);
-  if (animationRef != null) cancelAnimationFrame(animationRef);
 });
 </script>
 

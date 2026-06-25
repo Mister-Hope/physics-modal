@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
 import Copyright from "@/components/Copyright.vue";
 import NavBar from "@/components/NavBar.vue";
+
 import ControlPanel from "./components/ControlPanel.vue";
 import DataDisplay from "./components/DataDisplay.vue";
 import Visualizer from "./components/Visualizer.vue";
-import { DT, GRAVITY } from "./constants";
+import { TIME_STEP, GRAVITY } from "./constants";
 import type { PhysicsParams, SimulationState, VectorConfig } from "./types";
 import { SimulationMode } from "./types";
 
@@ -38,18 +39,9 @@ const vectors = ref<VectorConfig>({ ...INITIAL_VECTORS });
 let requestRef: number | null = null;
 let lastTimeRef: number | null = null;
 let accumulatorRef = 0;
-const stateRef = ref<SimulationState>({ ...INITIAL_STATE }).value;
+const stateRef = reactive<SimulationState>({ ...INITIAL_STATE });
 
-// Keep stateRef in sync
-const syncStateRef = computed(() => {
-  stateRef.theta = state.value.theta;
-  stateRef.omega = state.value.omega;
-  stateRef.alpha = state.value.alpha;
-  stateRef.time = state.value.time;
-  return stateRef;
-});
-
-function initializeState(): void {
+const initializeState = (): void => {
   const startState: SimulationState = {
     theta: params.value.initialAngle * (Math.PI / 180),
     omega: 0,
@@ -57,13 +49,9 @@ function initializeState(): void {
     time: 0,
   };
   state.value = { ...startState };
-  stateRef.theta = startState.theta;
-  stateRef.omega = startState.omega;
-  stateRef.alpha = startState.alpha;
-  stateRef.time = startState.time;
   accumulatorRef = 0;
   lastTimeRef = null;
-}
+};
 
 // Re-initialize when initial angle changes
 const updateParams = (newParams: PhysicsParams): void => {
@@ -72,40 +60,46 @@ const updateParams = (newParams: PhysicsParams): void => {
 };
 
 // RK4 Integration
-function updatePhysics(
+const updatePhysics = (
   currentState: SimulationState,
   currentParams: PhysicsParams,
-  dt: number,
-): SimulationState {
+  timeStep: number,
+): SimulationState => {
   const { theta, omega } = currentState;
   const { gravity, length } = currentParams;
 
   const evaluateDerivatives = (
-    th: number,
-    om: number,
+    thetaArg: number,
+    omegaArg: number,
   ): { dTheta: number; dOmega: number } => ({
-    dTheta: om,
-    dOmega: -(gravity / length) * Math.sin(th),
+    dTheta: omegaArg,
+    dOmega: -(gravity / length) * Math.sin(thetaArg),
   });
 
   const k1 = evaluateDerivatives(theta, omega);
-  const k2 = evaluateDerivatives(theta + k1.dTheta * dt * 0.5, omega + k1.dOmega * dt * 0.5);
-  const k3 = evaluateDerivatives(theta + k2.dTheta * dt * 0.5, omega + k2.dOmega * dt * 0.5);
-  const k4 = evaluateDerivatives(theta + k3.dTheta * dt, omega + k3.dOmega * dt);
+  const k2 = evaluateDerivatives(
+    theta + k1.dTheta * timeStep * 0.5,
+    omega + k1.dOmega * timeStep * 0.5,
+  );
+  const k3 = evaluateDerivatives(
+    theta + k2.dTheta * timeStep * 0.5,
+    omega + k2.dOmega * timeStep * 0.5,
+  );
+  const k4 = evaluateDerivatives(theta + k3.dTheta * timeStep, omega + k3.dOmega * timeStep);
 
-  const newTheta = theta + (dt / 6) * (k1.dTheta + 2 * k2.dTheta + 2 * k3.dTheta + k4.dTheta);
-  const newOmega = omega + (dt / 6) * (k1.dOmega + 2 * k2.dOmega + 2 * k3.dOmega + k4.dOmega);
+  const newTheta = theta + (timeStep / 6) * (k1.dTheta + 2 * k2.dTheta + 2 * k3.dTheta + k4.dTheta);
+  const newOmega = omega + (timeStep / 6) * (k1.dOmega + 2 * k2.dOmega + 2 * k3.dOmega + k4.dOmega);
   const newAlpha = -(gravity / length) * Math.sin(newTheta);
 
   return {
     theta: newTheta,
     omega: newOmega,
     alpha: newAlpha,
-    time: currentState.time + dt,
+    time: currentState.time + timeStep,
   };
-}
+};
 
-function animate(time: number): void {
+const animate = (time: number): void => {
   if (lastTimeRef != null) {
     const frameTime = Math.min((time - lastTimeRef) / 1000, 0.1);
     accumulatorRef += frameTime;
@@ -116,10 +110,10 @@ function animate(time: number): void {
       let active = true;
       let nextState = { ...stateRef };
 
-      while (accumulatorRef >= DT && active) {
+      while (accumulatorRef >= TIME_STEP && active) {
         const prevState = nextState;
-        nextState = updatePhysics(nextState, params.value, DT);
-        accumulatorRef -= DT;
+        nextState = updatePhysics(nextState, params.value, TIME_STEP);
+        accumulatorRef -= TIME_STEP;
 
         if (
           mode.value === SimulationMode.PauseAtBottom &&
@@ -153,12 +147,20 @@ function animate(time: number): void {
 
   lastTimeRef = time;
   requestRef = requestAnimationFrame(animate);
-}
+};
 
-function handleReset(): void {
+const handleReset = (): void => {
   initializeState();
   mode.value = SimulationMode.Paused;
-}
+};
+
+// Keep stateRef in sync with state (used for external resets)
+watch(state, (newState) => {
+  stateRef.theta = newState.theta;
+  stateRef.omega = newState.omega;
+  stateRef.alpha = newState.alpha;
+  stateRef.time = newState.time;
+});
 
 onMounted(() => {
   requestRef = requestAnimationFrame(animate);
@@ -170,7 +172,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen w-screen overflow-hidden text-slate-100 font-sans bg-slate-900">
+  <div
+    class="flex flex-col h-screen w-screen overflow-hidden text-slate-100 font-sans bg-slate-900"
+  >
     <NavBar title="单摆演示教学系统" :gradient="true" />
 
     <div class="flex-1 flex overflow-hidden relative">
@@ -184,9 +188,9 @@ onBeforeUnmount(() => {
         @reset="handleReset"
       />
 
-      <Visualizer :state="syncStateRef" :params="params" :vectors="vectors" />
+      <Visualizer :state="stateRef" :params="params" :vectors="vectors" />
 
-      <DataDisplay :state="syncStateRef" :params="params" />
+      <DataDisplay :state="stateRef" :params="params" />
 
       <Copyright />
     </div>

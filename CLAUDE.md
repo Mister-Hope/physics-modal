@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-物理模型演示网站 — Vue 3.5 驱动的 MPA（基于 Vue Router hash history），包含 3 个交互式物理模拟。
+物理模型演示网站 — Vue 3.5 驱动的 MPA（基于 Vue Router hash history），包含 5 个交互式物理模拟。
 
 ## 技术栈
 
@@ -19,7 +19,7 @@
 src/
 ├── main.ts                  # 入口：createApp → use(router) → mount
 ├── App.vue                  # 根组件，仅含 <RouterView />
-├── router/index.ts          # 路由：/, /pendulum, /conical-pendulum, /train-turn
+├── router/index.ts          # 路由：/, /pendulum, /conical-pendulum, /train-turn, /oscilloscope, /electric-field
 ├── components/              # 全局共享 UI 组件
 │   ├── NavBar.vue           # 统一顶部导航栏（左边返回按钮 + 居中标题）
 │   ├── Copyright.vue        # 右下角版权（"版权所有 东北育才 张伯望"）
@@ -33,7 +33,11 @@ src/
     ├── Home.vue             # 首页：3 个 demo 卡片入口
     ├── pendulum/            # 单摆（异步路由，SVG 渲染，RK4 积分）
     ├── conical-pendulum/    # 圆锥摆（异步路由，3D Canvas 渲染）
-    └── train-turn/          # 火车转弯（异步路由，2D Canvas 渲染）
+    ├── train-turn/          # 火车转弯（异步路由，2D Canvas 渲染）
+    ├── oscilloscope/        # 示波管（异步路由，2D Canvas 伪3D投影）
+    └── electric-field/      # 异号电荷电场与等势面（异步路由，Three.js 3D渲染）
+        ├── ElectricFieldView.vue    # 主视图（~1150行）
+        └── marchingCubesTables.ts   # Marching Cubes 查找表（MC_EDGE_TABLE + MC_TRI_TABLE）
 ```
 
 ## 核心架构约定
@@ -44,6 +48,7 @@ src/
 - **物理计算逻辑与渲染分离**：`utils/physics.ts` 负责计算，组件负责 Canvas/SVG 渲染
 - **LaTeX 字符串直接使用单反斜杠**：Vue 模板静态属性中 `latex="\theta"` 会正确传递给组件（Vue 模板编译器不处理 HTML 属性值中的反斜杠转义），无需 `\\` 或 `String.raw`
 - **所有 demo 独立目录**：含 `types.ts`、`constants.ts`、`components/`
+- **Three.js 懒加载**：`electric-field` 组件使用动态 `import('three')` 按需加载，避免增大主包
 - 生产构建输出到 `dist/`
 
 ## 命令
