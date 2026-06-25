@@ -58,7 +58,7 @@ onMounted(() => {
   isMounted = true;
 
   watch(
-    () => [props.color, props.latex],
+    () => [color, latex],
     () => {
       void renderMath();
     },

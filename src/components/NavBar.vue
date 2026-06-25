@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Icon } from "@iconify/vue";
+
 interface Props {
   title: string;
   gradient?: boolean;
@@ -29,13 +31,13 @@ const emit = defineEmits<{
     <router-link
       to="/"
       :class="[
-        'text-sm transition-colors flex items-center gap-1 shrink-0',
+        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all shrink-0',
         light && !darkMode
-          ? 'text-slate-500 hover:text-slate-700'
-          : 'text-slate-400 hover:text-slate-200',
+          ? 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+          : 'text-slate-300 hover:text-white hover:bg-slate-700',
       ]"
     >
-      ← 返回首页
+      <Icon icon="mdi:arrow-left" class="w-5 h-5" />
     </router-link>
     <h1
       v-if="gradient"
