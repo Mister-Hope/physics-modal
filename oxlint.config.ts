@@ -26,6 +26,10 @@ export default defineHopeConfig(
             "T",
             "_",
 
+            // 单词
+            "id", // identifier
+            "el", // element
+
             // 尺寸
             "w", // 宽度 width
             "h", // 高度 height
@@ -41,7 +45,11 @@ export default defineHopeConfig(
             "vx", // x 方向速度 velocity x
             "vy", // y 方向速度 velocity y
             "vz", // z 方向速度 velocity z
+            "nx", // 法线 x normal x
+            "ny", // 法线 y normal y
+            "nz", // 法线 z normal z
             "E", // 电场强度 electric field
+            "dt", // 时间微元 (delta time)
             "e", // 电子 electron
           ],
           exceptionPatterns: [
@@ -66,6 +74,12 @@ export default defineHopeConfig(
     rules: {
       // allow long vue components
       "max-lines": "off",
+    },
+  },
+  {
+    files: ["**/*.vue"],
+    rules: {
+      "import/unambiguous": "off",
     },
   },
 );

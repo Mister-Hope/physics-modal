@@ -60,26 +60,35 @@ const updateParams = (newParams: PhysicsParams): void => {
 };
 
 // RK4 Integration
-function updatePhysics(
+const updatePhysics = (
   currentState: SimulationState,
   currentParams: PhysicsParams,
-  dt: number,
-): SimulationState {
+  timeStep: number,
+): SimulationState => {
   const { theta, omega } = currentState;
   const { gravity, length } = currentParams;
 
-  const evaluateDerivatives = (th: number, om: number): { dTheta: number; dOmega: number } => ({
-    dTheta: om,
-    dOmega: -(gravity / length) * Math.sin(th),
+  const evaluateDerivatives = (
+    thetaArg: number,
+    omegaArg: number,
+  ): { dTheta: number; dOmega: number } => ({
+    dTheta: omegaArg,
+    dOmega: -(gravity / length) * Math.sin(thetaArg),
   });
 
   const k1 = evaluateDerivatives(theta, omega);
-  const k2 = evaluateDerivatives(theta + k1.dTheta * dt * 0.5, omega + k1.dOmega * dt * 0.5);
-  const k3 = evaluateDerivatives(theta + k2.dTheta * dt * 0.5, omega + k2.dOmega * dt * 0.5);
-  const k4 = evaluateDerivatives(theta + k3.dTheta * dt, omega + k3.dOmega * dt);
+  const k2 = evaluateDerivatives(
+    theta + k1.dTheta * timeStep * 0.5,
+    omega + k1.dOmega * timeStep * 0.5,
+  );
+  const k3 = evaluateDerivatives(
+    theta + k2.dTheta * timeStep * 0.5,
+    omega + k2.dOmega * timeStep * 0.5,
+  );
+  const k4 = evaluateDerivatives(theta + k3.dTheta * timeStep, omega + k3.dOmega * timeStep);
 
-  const newTheta = theta + (dt / 6) * (k1.dTheta + 2 * k2.dTheta + 2 * k3.dTheta + k4.dTheta);
-  const newOmega = omega + (dt / 6) * (k1.dOmega + 2 * k2.dOmega + 2 * k3.dOmega + k4.dOmega);
+  const newTheta = theta + (timeStep / 6) * (k1.dTheta + 2 * k2.dTheta + 2 * k3.dTheta + k4.dTheta);
+  const newOmega = omega + (timeStep / 6) * (k1.dOmega + 2 * k2.dOmega + 2 * k3.dOmega + k4.dOmega);
   const newAlpha = -(gravity / length) * Math.sin(newTheta);
 
   return {
@@ -88,9 +97,9 @@ function updatePhysics(
     alpha: newAlpha,
     time: currentState.time + dt,
   };
-}
+};
 
-function animate(time: number): void {
+const animate = (time: number): void => {
   if (lastTimeRef != null) {
     const frameTime = Math.min((time - lastTimeRef) / 1000, 0.1);
     accumulatorRef += frameTime;
@@ -138,12 +147,12 @@ function animate(time: number): void {
 
   lastTimeRef = time;
   requestRef = requestAnimationFrame(animate);
-}
+};
 
-function handleReset(): void {
+const handleReset = (): void => {
   initializeState();
   mode.value = SimulationMode.Paused;
-}
+};
 
 // Keep stateRef in sync with state (used for external resets)
 watch(state, (newState) => {

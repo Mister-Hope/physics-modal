@@ -1,12 +1,9 @@
 <script setup lang="ts">
 interface Props {
-  /** Whether to use lighter text (for light-themed demos) */
   light?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
-  light: false,
-});
+const { light = false } = defineProps<Props>();
 </script>
 
 <template>

@@ -7,13 +7,9 @@ interface Props {
   color?: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  latex: "",
-  block: false,
-  color: "",
-});
+const { latex = "", block = false, color = "" } = defineProps<Props>();
 
-const content = computed(() => props.latex);
+const content = computed(() => latex);
 
 const containerRef = ref<HTMLSpanElement>();
 
@@ -21,6 +17,7 @@ let isMounted = true;
 
 const renderMath = async (): Promise<void> => {
   const el = containerRef.value;
+
   if (!el) return;
 
   if (!globalThis.MathJax?.typesetPromise) {
@@ -30,7 +27,7 @@ const renderMath = async (): Promise<void> => {
     return;
   }
 
-  const delimiter = props.block ? "$$" : "$";
+  const delimiter = block ? "$$" : "$";
   el.textContent = `${delimiter}${content.value}${delimiter}`;
   el.style.visibility = "hidden";
 
@@ -40,9 +37,7 @@ const renderMath = async (): Promise<void> => {
 
     el.style.visibility = "visible";
 
-    const { color } = props;
-
-    if (props.color) {
+    if (color) {
       const svg = el.querySelector("svg");
       if (svg) {
         svg.style.fill = color;

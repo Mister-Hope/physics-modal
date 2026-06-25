@@ -13,7 +13,7 @@ interface Props {
 defineProps<Props>();
 
 // Calculate exact period using Arithmetic-Geometric Mean (AGM)
-function calculateExactPeriod(length: number, gravity: number, maxAngleDeg: number): number {
+const calculateExactPeriod = (length: number, gravity: number, maxAngleDeg: number): number => {
   if (maxAngleDeg === 0) return 2 * Math.PI * Math.sqrt(length / gravity);
 
   let a = 1;
@@ -28,7 +28,7 @@ function calculateExactPeriod(length: number, gravity: number, maxAngleDeg: numb
   }
 
   return (2 * Math.PI * Math.sqrt(length / gravity)) / a;
-}
+};
 </script>
 
 <template>

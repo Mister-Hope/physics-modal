@@ -6,12 +6,7 @@ interface Props {
   active?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
-  variant: "primary",
-  size: "md",
-  disabled: false,
-  active: false,
-});
+const { variant = "primary", size = "md", disabled = false, active = false } = defineProps<Props>();
 
 const emit = defineEmits<{
   click: [event: MouseEvent];

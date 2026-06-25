@@ -17,7 +17,7 @@ interface Props {
   vectors: VectorConfig;
 }
 
-const props = defineProps<Props>();
+const { state, params, vectors } = defineProps<Props>();
 
 const containerRef = ref<HTMLDivElement>();
 const width = ref(800);
@@ -44,24 +44,20 @@ const pivotX = computed(() => width.value / 2);
 const pivotY = 50;
 
 const bobX = computed(
-  () => pivotX.value + Math.sin(props.state.theta) * props.params.length * PIXELS_PER_METER,
+  () => pivotX.value + Math.sin(state.theta) * params.length * PIXELS_PER_METER,
 );
-const bobY = computed(
-  () => pivotY + Math.cos(props.state.theta) * props.params.length * PIXELS_PER_METER,
-);
+const bobY = computed(() => pivotY + Math.cos(state.theta) * params.length * PIXELS_PER_METER);
 
-const tanX = computed(() => Math.cos(props.state.theta));
-const tanY = computed(() => -Math.sin(props.state.theta));
-const radX = computed(() => -Math.sin(props.state.theta));
-const radY = computed(() => -Math.cos(props.state.theta));
+const tanX = computed(() => Math.cos(state.theta));
+const tanY = computed(() => -Math.sin(state.theta));
+const radX = computed(() => -Math.sin(state.theta));
+const radY = computed(() => -Math.cos(state.theta));
 
-const vMag = computed(() => props.state.omega * props.params.length);
-const atMag = computed(() => -GRAVITY * Math.sin(props.state.theta));
-const anMag = computed(() => props.params.length * props.state.omega * props.state.omega);
-const tensionMag = computed(
-  () => props.params.mass * (GRAVITY * Math.cos(props.state.theta) + anMag.value),
-);
-const gravityMag = computed(() => props.params.mass * GRAVITY);
+const vMag = computed(() => state.omega * params.length);
+const atMag = computed(() => -GRAVITY * Math.sin(state.theta));
+const anMag = computed(() => params.length * state.omega * state.omega);
+const tensionMag = computed(() => params.mass * (GRAVITY * Math.cos(state.theta) + anMag.value));
+const gravityMag = computed(() => params.mass * GRAVITY);
 
 // Velocity vector
 const vVec = computed(() => ({
@@ -94,7 +90,7 @@ const gravityVec = computed(() => ({
 }));
 
 // Gravity components
-const GnMag = computed(() => gravityMag.value * Math.cos(props.state.theta));
+const GnMag = computed(() => gravityMag.value * Math.cos(state.theta));
 const GnVec = computed(() => ({
   x: -radX.value * GnMag.value * PIXELS_PER_METER * SCALE_FORCE,
   y: -radY.value * GnMag.value * PIXELS_PER_METER * SCALE_FORCE,
@@ -113,12 +109,15 @@ const markerColors = computed(() =>
     COLORS.forceTension,
     COLORS.forceGravity,
     COLORS.forceGravityComponent,
-  ].map((c) => c.replace("#", "")),
+  ].map((color) => color.replace("#", "")),
 );
 
-function arrowEnd(bx: number, by: number, dx: number, dy: number): { x: number; y: number } {
-  return { x: bx + dx, y: by + dy };
-}
+const arrowEnd = (
+  baseX: number,
+  baseY: number,
+  deltaX: number,
+  deltaY: number,
+): { x: number; y: number } => ({ x: baseX + deltaX, y: baseY + deltaY });
 </script>
 
 <template>

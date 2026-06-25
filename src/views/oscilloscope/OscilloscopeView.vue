@@ -1,4 +1,19 @@
 <script setup lang="ts">
+import type {
+  Camera,
+  CanvasTexture,
+  Group,
+  LineBasicMaterial,
+  Mesh,
+  MeshBasicMaterial,
+  MeshPhongMaterial,
+  PerspectiveCamera,
+  Scene,
+  SphereGeometry,
+  Vector3,
+  WebGLRenderer,
+} from "three";
+import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { onBeforeUnmount, onMounted, ref, nextTick } from "vue";
 
 import Copyright from "@/components/Copyright.vue";
@@ -16,24 +31,34 @@ const utXXRef = ref<HTMLCanvasElement | null>(null);
 // Lazy-load Three.js
 // ============================================================
 let THREE: typeof import("three") | null = null;
-let OrbitControlsClass: (new (...args: any[]) => any) | null = null;
+type OrbitControlsConstructor = new (camera: Camera, domElement: HTMLElement) => OrbitControls;
+let OrbitControlsCtor: OrbitControlsConstructor | null = null;
 
-async function loadThree() {
-  const [t, o] = await Promise.all([
+const loadThree = async (): Promise<void> => {
+  const [threeModule, orbitModule] = await Promise.all([
     import("three"),
     import("three/examples/jsm/controls/OrbitControls.js"),
   ]);
-  THREE = t;
-  OrbitControlsClass = o.OrbitControls;
-}
+  THREE = threeModule;
+  OrbitControlsCtor = orbitModule.OrbitControls as OrbitControlsConstructor;
+};
 
 // ============================================================
 // Three.js objects
 // ============================================================
-let camera: any, orbit: any, renderer: any, scene: any;
-let screenCtx: any, screenPlane: any, screenTexture: any, tubeMesh: any;
-let plateXX_left: any, plateXX_right: any, plateYY_bot: any, plateYY_top: any;
-let beamGroup: any;
+let camera: PerspectiveCamera | null = null;
+let orbit: OrbitControls | null = null;
+let renderer: WebGLRenderer | null = null;
+let scene: Scene | null = null;
+let screenCtx: CanvasRenderingContext2D | null = null;
+let screenPlane: Mesh | null = null;
+let screenTexture: CanvasTexture | null = null;
+let tubeMesh: Group | null = null;
+let plateXX_left: Mesh | null = null;
+let plateXX_right: Mesh | null = null;
+let plateYY_bot: Mesh | null = null;
+let plateYY_top: Mesh | null = null;
+let beamGroup: Group | null = null;
 let animFrame = 0;
 const screenCanvasW = 512;
 const screenCanvasH = 512;
@@ -41,34 +66,34 @@ const screenCanvasH = 512;
 // ============================================================
 // Constants (from original)
 // ============================================================
-const GUN_X = 15;
-const XX_E = 315,
-  XX_S = 200,
-  YY_E = 185,
-  YY_S = 70;
-const SCR_X = 430;
-const PLATE_GAP = 24,
-  PLATE_W = 40;
-const AX_S = 0.12,
-  AY_S = 0.075,
-  VX = 6;
-const SPAWN_INT = 4,
-  TRAIL = 24,
-  T_SCN = 180,
-  T_SIG = 180;
+const ELECTRON_GUN_X = 15;
+const XX_PLATE_END = 315;
+const XX_PLATE_START = 200;
+const YY_PLATE_END = 185;
+const YY_PLATE_START = 70;
+const SCREEN_X = 430;
+const PLATE_GAP = 24;
+const PLATE_WIDTH = 40;
+const XX_DEFLECTION_SENSITIVITY = 0.12;
+const YY_DEFLECTION_SENSITIVITY = 0.075;
+const INITIAL_VELOCITY_X = 6;
+const SPAWN_INTERVAL = 4;
+const TRAIL_LENGTH = 24;
+const SCAN_PERIOD = 180;
+const SIGNAL_PERIOD = 180;
 
 interface Section {
   x: number;
-  hw: number;
-  hh: number;
+  halfWidth: number;
+  halfHeight: number;
 }
 const SECTIONS: Section[] = [
-  { x: 0, hw: 15, hh: 15 },
-  { x: 60, hw: 15, hh: 15 },
-  { x: 65, hw: 46, hh: 46 },
-  { x: 325, hw: 46, hh: 46 },
-  { x: 360, hw: 100, hh: 100 },
-  { x: 430, hw: 100, hh: 100 },
+  { x: 0, halfWidth: 15, halfHeight: 15 },
+  { x: 60, halfWidth: 15, halfHeight: 15 },
+  { x: 65, halfWidth: 46, halfHeight: 46 },
+  { x: 325, halfWidth: 46, halfHeight: 46 },
+  { x: 360, halfWidth: 100, halfHeight: 100 },
+  { x: 430, halfWidth: 100, halfHeight: 100 },
 ];
 
 interface EState {
@@ -78,7 +103,7 @@ interface EState {
   vx: number;
   vy: number;
   vz: number;
-  bp: number;
+  birthPhase: number;
   sVy: number | null;
   sVx: number;
   trail: { x: number; y: number; z: number }[];
@@ -93,8 +118,8 @@ interface Scenario {
   name: string;
   sub: string;
   desc: string;
-  Vy: (p: number) => number;
-  Vx: (p: number) => number;
+  voltageY: (phase: number) => number;
+  voltageX: (phase: number) => number;
   vyI: string;
   vxI: string;
   isCustom?: boolean;
@@ -104,30 +129,30 @@ interface Scenario {
 // Physics state
 // ============================================================
 const customParams = { yMode: 0, xMode: 0, yAmp: 0.8, xAmp: 0.8 };
-function customVy(p: number): number {
+const customizeVy = (phase: number): number => {
   if (customParams.yMode === 1) return customParams.yAmp;
   if (customParams.yMode === 2)
-    return Math.abs(customParams.yAmp) * Math.sin((2 * Math.PI * p) / T_SIG);
+    return Math.abs(customParams.yAmp) * Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD);
   if (customParams.yMode === 3)
-    return Math.abs(customParams.yAmp) * (2 * ((p % T_SCN) / T_SCN) - 1);
+    return Math.abs(customParams.yAmp) * (2 * ((phase % SCAN_PERIOD) / SCAN_PERIOD) - 1);
   return 0;
-}
-function customVx(p: number): number {
+};
+const customizeVx = (phase: number): number => {
   if (customParams.xMode === 1) return customParams.xAmp;
   if (customParams.xMode === 2)
-    return Math.abs(customParams.xAmp) * Math.sin((2 * Math.PI * p) / T_SIG);
+    return Math.abs(customParams.xAmp) * Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD);
   if (customParams.xMode === 3)
-    return Math.abs(customParams.xAmp) * (2 * ((p % T_SCN) / T_SCN) - 1);
+    return Math.abs(customParams.xAmp) * (2 * ((phase % SCAN_PERIOD) / SCAN_PERIOD) - 1);
   return 0;
-}
+};
 
 const scenarios: Scenario[] = [
   {
     name: "零电压",
     sub: "基准状态",
     desc: "XX'、YY' 均不加电压。电子沿直线运动打在荧光屏正中心，呈现一个亮斑。",
-    Vy: () => 0,
-    Vx: () => 0,
+    voltageY: () => 0,
+    voltageX: () => 0,
     vyI: "0（不加电压）",
     vxI: "0（不加电压）",
   },
@@ -135,8 +160,8 @@ const scenarios: Scenario[] = [
     name: "Y 正偏",
     sub: "恒定偏转",
     desc: "XX'不加电压，YY'加恒定正压。电子向Y板上方偏转，亮斑在Y轴上方。",
-    Vy: () => 1,
-    Vx: () => 0,
+    voltageY: () => 1,
+    voltageX: () => 0,
     vyI: "Y>Y'（恒定正压）",
     vxI: "0（不加电压）",
   },
@@ -144,8 +169,8 @@ const scenarios: Scenario[] = [
     name: "Y 负偏",
     sub: "恒定偏转",
     desc: "XX'不加电压，YY'加恒定负压。电子向Y'板下方偏转。",
-    Vy: () => -1,
-    Vx: () => 0,
+    voltageY: () => -1,
+    voltageX: () => 0,
     vyI: "Y'>Y（恒定反压）",
     vxI: "0",
   },
@@ -153,8 +178,8 @@ const scenarios: Scenario[] = [
     name: "Y 交变",
     sub: "交变电压",
     desc: "XX'不加电压，YY'加正弦电压。竖直亮线。",
-    Vy: (p) => Math.sin((2 * Math.PI * p) / T_SIG),
-    Vx: () => 0,
+    voltageY: (phase) => Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD),
+    voltageX: () => 0,
     vyI: "正弦交变",
     vxI: "0",
   },
@@ -162,8 +187,8 @@ const scenarios: Scenario[] = [
     name: "X 正偏",
     sub: "恒定偏转",
     desc: "YY'不加电压，XX'加恒定正压。电子向X板右侧偏转。",
-    Vy: () => 0,
-    Vx: () => 1,
+    voltageY: () => 0,
+    voltageX: () => 1,
     vyI: "0",
     vxI: "X>X'",
   },
@@ -171,8 +196,8 @@ const scenarios: Scenario[] = [
     name: "X 负偏",
     sub: "恒定偏转",
     desc: "YY'不加电压，XX'加恒定负压。电子向X'板左侧偏转。",
-    Vy: () => 0,
-    Vx: () => -1,
+    voltageY: () => 0,
+    voltageX: () => -1,
     vyI: "0",
     vxI: "X'>X",
   },
@@ -180,8 +205,8 @@ const scenarios: Scenario[] = [
     name: "X 扫描",
     sub: "锯齿波",
     desc: "YY'不加电压，XX'加锯齿波。水平亮线。",
-    Vy: () => 0,
-    Vx: (p) => 2 * ((p % T_SCN) / T_SCN) - 1,
+    voltageY: () => 0,
+    voltageX: (phase) => 2 * ((phase % SCAN_PERIOD) / SCAN_PERIOD) - 1,
     vyI: "0",
     vxI: "锯齿波",
   },
@@ -189,8 +214,8 @@ const scenarios: Scenario[] = [
     name: "标准波形",
     sub: "波形成像",
     desc: "YY'正弦信号，XX'同周期锯齿波。显示正弦波形。",
-    Vy: (p) => Math.sin((2 * Math.PI * p) / T_SIG),
-    Vx: (p) => 2 * ((p % T_SCN) / T_SCN) - 1,
+    voltageY: (phase) => Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD),
+    voltageX: (phase) => 2 * ((phase % SCAN_PERIOD) / SCAN_PERIOD) - 1,
     vyI: "正弦",
     vxI: "同周期锯齿波",
   },
@@ -198,8 +223,8 @@ const scenarios: Scenario[] = [
     name: "双向偏转",
     sub: "恒定偏转",
     desc: "XX'和YY'均加恒定正压。亮斑在第一象限。",
-    Vy: () => 1,
-    Vx: () => 1,
+    voltageY: () => 1,
+    voltageX: () => 1,
     vyI: "Y>Y'",
     vxI: "X>X'",
   },
@@ -207,8 +232,8 @@ const scenarios: Scenario[] = [
     name: "X偏+Y交变",
     sub: "组合偏转",
     desc: "XX'恒定正压，YY'正弦电压。右侧竖直亮线。",
-    Vy: (p) => Math.sin((2 * Math.PI * p) / T_SIG),
-    Vx: () => 1,
+    voltageY: (phase) => Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD),
+    voltageX: () => 1,
     vyI: "正弦",
     vxI: "X>X'",
   },
@@ -216,8 +241,8 @@ const scenarios: Scenario[] = [
     name: "双周期扫描",
     sub: "完整波形",
     desc: "YY'正弦，XX'半周期锯齿波。完整正弦波。",
-    Vy: (p) => Math.sin((2 * Math.PI * p) / T_SIG),
-    Vx: (p) => 2 * ((p % (T_SCN / 2)) / (T_SCN / 2)) - 1,
+    voltageY: (phase) => Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD),
+    voltageX: (phase) => 2 * ((phase % (SCAN_PERIOD / 2)) / (SCAN_PERIOD / 2)) - 1,
     vyI: "正弦",
     vxI: "半周期锯齿波",
   },
@@ -225,8 +250,8 @@ const scenarios: Scenario[] = [
     name: "自定义",
     sub: "自由探索",
     desc: "手动调节电压类型、幅度和频率。恒定模式幅度可正可负。",
-    Vy: (p) => customVy(p),
-    Vx: (p) => customVx(p),
+    voltageY: (phase) => customizeVy(phase),
+    voltageX: (phase) => customizeVx(phase),
     vyI: "自定义",
     vxI: "自定义",
     isCustom: true,
@@ -244,105 +269,98 @@ let isPaused = false;
 // ============================================================
 // Build 3D tube geometry
 // ============================================================
-function buildTubeMesh() {
+interface QuadVertex {
+  posX: number;
+  posY: number;
+  posZ: number;
+}
+interface QuadNormal {
+  nx: number;
+  ny: number;
+  nz: number;
+}
+
+const buildTubeMesh = (): Group | null => {
   if (!THREE) return null;
   const verts: number[] = [];
   const indices: number[] = [];
   const normals: number[] = [];
 
-  function addQuad(
-    x0: number,
-    y0: number,
-    z0: number,
-    x1: number,
-    y1: number,
-    z1: number,
-    x2: number,
-    y2: number,
-    z2: number,
-    x3: number,
-    y3: number,
-    z3: number,
-    nx: number,
-    ny: number,
-    nz: number,
-  ) {
+  const addQuad = (
+    vertices: [QuadVertex, QuadVertex, QuadVertex, QuadVertex],
+    normal: QuadNormal,
+  ): void => {
     const base = verts.length / 3;
-    verts.push(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-    normals.push(nx, ny, nz, nx, ny, nz, nx, ny, nz, nx, ny, nz);
+    const [v0, v1, v2, v3] = vertices;
+    verts.push(
+      v0.posX,
+      v0.posY,
+      v0.posZ,
+      v1.posX,
+      v1.posY,
+      v1.posZ,
+      v2.posX,
+      v2.posY,
+      v2.posZ,
+      v3.posX,
+      v3.posY,
+      v3.posZ,
+    );
+    normals.push(
+      normal.nx,
+      normal.ny,
+      normal.nz,
+      normal.nx,
+      normal.ny,
+      normal.nz,
+      normal.nx,
+      normal.ny,
+      normal.nz,
+      normal.nx,
+      normal.ny,
+      normal.nz,
+    );
     indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
-  }
+  };
 
-  for (let i = 0; i < SECTIONS.length - 1; i++) {
-    const s0 = SECTIONS[i],
-      s1 = SECTIONS[i + 1];
+  for (let idx = 0; idx < SECTIONS.length - 1; idx++) {
+    const secA = SECTIONS[idx];
+    const secB = SECTIONS[idx + 1];
     addQuad(
-      s0.x,
-      s0.hh,
-      -s0.hw,
-      s1.x,
-      s1.hh,
-      -s1.hw,
-      s1.x,
-      s1.hh,
-      s1.hw,
-      s0.x,
-      s0.hh,
-      s0.hw,
-      0,
-      1,
-      0,
+      [
+        { posX: secA.x, posY: secA.halfHeight, posZ: -secA.halfWidth },
+        { posX: secB.x, posY: secB.halfHeight, posZ: -secB.halfWidth },
+        { posX: secB.x, posY: secB.halfHeight, posZ: secB.halfWidth },
+        { posX: secA.x, posY: secA.halfHeight, posZ: secA.halfWidth },
+      ],
+      { nx: 0, ny: 1, nz: 0 },
     );
     addQuad(
-      s0.x,
-      -s0.hh,
-      s0.hw,
-      s1.x,
-      -s1.hh,
-      s1.hw,
-      s1.x,
-      -s1.hh,
-      -s1.hw,
-      s0.x,
-      -s0.hh,
-      -s0.hw,
-      0,
-      -1,
-      0,
+      [
+        { posX: secA.x, posY: -secA.halfHeight, posZ: secA.halfWidth },
+        { posX: secB.x, posY: -secB.halfHeight, posZ: secB.halfWidth },
+        { posX: secB.x, posY: -secB.halfHeight, posZ: -secB.halfWidth },
+        { posX: secA.x, posY: -secA.halfHeight, posZ: -secA.halfWidth },
+      ],
+      { nx: 0, ny: -1, nz: 0 },
     );
     addQuad(
-      s0.x,
-      -s0.hh,
-      s0.hw,
-      s1.x,
-      -s1.hh,
-      s1.hw,
-      s1.x,
-      s1.hh,
-      s1.hw,
-      s0.x,
-      s0.hh,
-      s0.hw,
-      0,
-      0,
-      1,
+      [
+        { posX: secA.x, posY: -secA.halfHeight, posZ: secA.halfWidth },
+        { posX: secB.x, posY: -secB.halfHeight, posZ: secB.halfWidth },
+        { posX: secB.x, posY: secB.halfHeight, posZ: secB.halfWidth },
+        { posX: secA.x, posY: secA.halfHeight, posZ: secA.halfWidth },
+      ],
+      { nx: 0, ny: 0, nz: 1 },
     );
     addQuad(
-      s0.x,
-      s0.hh,
-      -s0.hw,
-      s1.x,
-      s1.hh,
-      -s1.hw,
-      s1.x,
-      -s1.hh,
-      -s1.hw,
-      s0.x,
-      -s0.hh,
-      -s0.hw,
-      0,
-      0,
-      -1,
+      [
+        { posX: secA.x, posY: secA.halfHeight, posZ: -secA.halfWidth },
+        { posX: secB.x, posY: secB.halfHeight, posZ: -secB.halfWidth },
+        { posX: secB.x, posY: -secB.halfHeight, posZ: -secB.halfWidth },
+        { posX: secA.x, posY: -secA.halfHeight, posZ: -secA.halfWidth },
+      ],
+      { nx: 0, ny: 0, nz: -1 },
     );
   }
 
@@ -377,92 +395,94 @@ function buildTubeMesh() {
   group.add(mesh);
   group.add(wireframe);
   return group;
-}
+};
 
 // ============================================================
 // Build screen plane with canvas texture
 // ============================================================
-function buildScreenPlane() {
+const buildScreenPlane = (): Mesh | null => {
   if (!THREE) return null;
   const canvas = document.createElement("canvas");
   canvas.width = screenCanvasW;
   canvas.height = screenCanvasH;
-  screenCtx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  screenCtx = ctx;
   screenTexture = new THREE.CanvasTexture(canvas);
 
   const geom = new THREE.PlaneGeometry(200, 200);
   const mat = new THREE.MeshBasicMaterial({ map: screenTexture, side: THREE.DoubleSide });
   const plane = new THREE.Mesh(geom, mat);
-  plane.position.set(SCR_X, 0, 0);
+  plane.position.set(SCREEN_X, 0, 0);
   plane.rotation.y = -Math.PI / 2;
   return plane;
-}
+};
 
-function updateScreenTexture() {
+const updateScreenTexture = (): void => {
   if (!screenCtx || !screenTexture) return;
-  const w = screenCanvasW,
-    h = screenCanvasH;
+  const h = screenCanvasH,
+    w = screenCanvasW;
   screenCtx.clearRect(0, 0, w, h);
   screenCtx.fillStyle = "#060a12";
   screenCtx.fillRect(0, 0, w, h);
-  const margin = 0.08 * w,
-    sw = w - 2 * margin,
-    sh = h - 2 * margin;
+  const margin = 0.08 * w;
+  const screenW = w - 2 * margin;
+  const screenH = h - 2 * margin;
   screenCtx.strokeStyle = "rgba(74,144,217,0.12)";
   screenCtx.lineWidth = 0.5;
   for (let i = 1; i < 8; i++) {
-    const gx = margin + (sw / 8) * i,
-      gy = margin + (sh / 8) * i;
+    const gridX = margin + (screenW / 8) * i;
+    const gridY = margin + (screenH / 8) * i;
     screenCtx.beginPath();
-    screenCtx.moveTo(gx, margin);
-    screenCtx.lineTo(gx, margin + sh);
+    screenCtx.moveTo(gridX, margin);
+    screenCtx.lineTo(gridX, margin + screenH);
     screenCtx.stroke();
     screenCtx.beginPath();
-    screenCtx.moveTo(margin, gy);
-    screenCtx.lineTo(margin + sw, gy);
+    screenCtx.moveTo(margin, gridY);
+    screenCtx.lineTo(margin + screenW, gridY);
     screenCtx.stroke();
   }
   screenCtx.strokeStyle = "rgba(138,180,248,0.25)";
   screenCtx.lineWidth = 0.8;
   screenCtx.beginPath();
   screenCtx.moveTo(w / 2, margin);
-  screenCtx.lineTo(w / 2, margin + sh);
+  screenCtx.lineTo(w / 2, margin + screenH);
   screenCtx.stroke();
   screenCtx.beginPath();
   screenCtx.moveTo(margin, h / 2);
-  screenCtx.lineTo(margin + sw, h / 2);
+  screenCtx.lineTo(margin + screenW, h / 2);
   screenCtx.stroke();
-  const scaleX = sw / 200,
-    scaleY = sh / 200;
+  const scaleX = screenW / 200;
+  const scaleY = screenH / 200;
   for (const imp of impacts) {
     const alpha = Math.max(0, 1 - imp.age / persistence);
-    const px = w / 2 + imp.z * scaleX,
-      py = h / 2 - imp.y * scaleY;
-    const r = 4 + (1 - alpha) * 5;
-    const glow = screenCtx.createRadialGradient(px, py, 0, px, py, r * 1.5);
+    const pixelX = w / 2 + imp.z * scaleX;
+    const pixelY = h / 2 - imp.y * scaleY;
+    const radius = 4 + (1 - alpha) * 5;
+    const glow = screenCtx.createRadialGradient(pixelX, pixelY, 0, pixelX, pixelY, radius * 1.5);
     glow.addColorStop(0, `rgba(180,255,140,${Number(alpha)})`);
     glow.addColorStop(0.2, `rgba(60,255,60,${alpha * 0.8})`);
     glow.addColorStop(0.5, `rgba(0,200,30,${alpha * 0.35})`);
     glow.addColorStop(1, "rgba(0,200,30,0)");
     screenCtx.fillStyle = glow;
     screenCtx.beginPath();
-    screenCtx.arc(px, py, r * 1.5, 0, Math.PI * 2);
+    screenCtx.arc(pixelX, pixelY, radius * 1.5, 0, Math.PI * 2);
     screenCtx.fill();
     screenCtx.fillStyle = `rgba(200,255,180,${alpha})`;
     screenCtx.beginPath();
-    screenCtx.arc(px, py, r * 0.3, 0, Math.PI * 2);
+    screenCtx.arc(pixelX, pixelY, radius * 0.3, 0, Math.PI * 2);
     screenCtx.fill();
   }
   screenCtx.strokeStyle = "rgba(100,170,240,0.5)";
   screenCtx.lineWidth = 2;
-  screenCtx.strokeRect(margin, margin, sw, sh);
+  screenCtx.strokeRect(margin, margin, screenW, screenH);
   screenTexture.needsUpdate = true;
-}
+};
 
 // ============================================================
 // Build electrode plates
 // ============================================================
-function createPlateMaterial(polarity: number) {
+const createPlateMaterial = (polarity: number): MeshPhongMaterial | null => {
   if (!THREE) return null;
   const intensity = Math.min(Math.abs(polarity), 1);
   const specular = 0x889999;
@@ -481,13 +501,13 @@ function createPlateMaterial(polarity: number) {
   }
   // Pastel red for positive (max saturation ~50%)
   if (polarity > 0) {
-    const r = 0.27 + intensity * 0.4;
-    const g = 0.33 - intensity * 0.13;
-    const b = 0.4 - intensity * 0.2;
-    const er = intensity * 0.1;
+    const redChannel = 0.27 + intensity * 0.4;
+    const greenChannel = 0.33 - intensity * 0.13;
+    const blueChannel = 0.4 - intensity * 0.2;
+    const emissiveR = intensity * 0.1;
     return new THREE.MeshPhongMaterial({
-      color: new THREE.Color(r, g, b),
-      emissive: new THREE.Color(er, 0, 0),
+      color: new THREE.Color(redChannel, greenChannel, blueChannel),
+      emissive: new THREE.Color(emissiveR, 0, 0),
       specular,
       shininess,
       transparent: true,
@@ -496,39 +516,39 @@ function createPlateMaterial(polarity: number) {
     });
   }
   // Pastel blue for negative
-  const r = 0.27 - intensity * 0.07;
-  const g = 0.33 - intensity * 0.13;
-  const bl = 0.4 + intensity * 0.3;
-  const eb = intensity * 0.1;
+  const redC = 0.27 - intensity * 0.07;
+  const greenC = 0.33 - intensity * 0.13;
+  const blueC = 0.4 + intensity * 0.3;
+  const emissiveB = intensity * 0.1;
   return new THREE.MeshPhongMaterial({
-    color: new THREE.Color(r, g, bl),
-    emissive: new THREE.Color(0, 0, eb),
+    color: new THREE.Color(redC, greenC, blueC),
+    emissive: new THREE.Color(0, 0, emissiveB),
     specular,
     shininess,
     transparent: true,
     opacity,
     depthWrite: false,
   });
-}
+};
 
-function buildPlates() {
+const buildPlates = (): void => {
   if (!THREE) return;
-  const pw = PLATE_W * 2,
-    ph = YY_E - YY_S,
-    pd = 2;
-  const yGeom = new THREE.BoxGeometry(ph, pd, pw);
+  const plateWidth = PLATE_WIDTH * 2;
+  const plateHeight = YY_PLATE_END - YY_PLATE_START;
+  const plateDepth = 2;
+  const yGeom = new THREE.BoxGeometry(plateHeight, plateDepth, plateWidth);
   plateYY_top = new THREE.Mesh(yGeom, createPlateMaterial(0));
-  plateYY_top.position.set((YY_S + YY_E) / 2, PLATE_GAP, 0);
+  plateYY_top.position.set((YY_PLATE_START + YY_PLATE_END) / 2, PLATE_GAP, 0);
   plateYY_bot = new THREE.Mesh(yGeom, createPlateMaterial(0));
-  plateYY_bot.position.set((YY_S + YY_E) / 2, -PLATE_GAP, 0);
-  const xGeom = new THREE.BoxGeometry(XX_E - XX_S, pw, pd);
+  plateYY_bot.position.set((YY_PLATE_START + YY_PLATE_END) / 2, -PLATE_GAP, 0);
+  const xGeom = new THREE.BoxGeometry(XX_PLATE_END - XX_PLATE_START, plateWidth, plateDepth);
   plateXX_left = new THREE.Mesh(xGeom, createPlateMaterial(0));
-  plateXX_left.position.set((XX_S + XX_E) / 2, 0, -PLATE_GAP);
+  plateXX_left.position.set((XX_PLATE_START + XX_PLATE_END) / 2, 0, -PLATE_GAP);
   plateXX_right = new THREE.Mesh(xGeom, createPlateMaterial(0));
-  plateXX_right.position.set((XX_S + XX_E) / 2, 0, PLATE_GAP);
-}
+  plateXX_right.position.set((XX_PLATE_START + XX_PLATE_END) / 2, 0, PLATE_GAP);
+};
 
-function updatePlateColor(material: any, polarity: number): void {
+const updatePlateColor = (material: MeshPhongMaterial, polarity: number): void => {
   if (!material || !THREE) return;
   const intensity = Math.min(Math.abs(polarity), 1);
   material.opacity = 0.75;
@@ -542,23 +562,23 @@ function updatePlateColor(material: any, polarity: number): void {
     material.color.setRGB(0.27 - intensity * 0.07, 0.33 - intensity * 0.13, 0.4 + intensity * 0.3);
     material.emissive?.setRGB(0, 0, intensity * 0.1);
   }
-}
+};
 
-function updatePlateColors() {
+const updatePlateColors = (): void => {
   if (!THREE) return;
-  const s = scenarios[curSc];
-  const vy = s.Vy(gPhase),
-    vx = s.Vx(gPhase);
-  updatePlateColor(plateYY_top.material, vy);
-  updatePlateColor(plateYY_bot.material, -vy);
-  updatePlateColor(plateXX_left.material, vx);
-  updatePlateColor(plateXX_right.material, -vx);
-}
+  const scenario = scenarios[curSc];
+  const voltageY = scenario.voltageY(gPhase);
+  const voltageX = scenario.voltageX(gPhase);
+  updatePlateColor(plateYY_top.material, voltageY);
+  updatePlateColor(plateYY_bot.material, -voltageY);
+  updatePlateColor(plateXX_left.material, voltageX);
+  updatePlateColor(plateXX_right.material, -voltageX);
+};
 
 // ============================================================
 // Electron gun
 // ============================================================
-function buildGunMesh() {
+const buildGunMesh = (): Group | null => {
   if (!THREE) return null;
   const group = new THREE.Group();
   for (let i = 0; i < 3; i++) {
@@ -579,20 +599,20 @@ function buildGunMesh() {
   base.position.set(48, 0, 0);
   group.add(base);
   return group;
-}
+};
 
 // ============================================================
 // Beam rendering
 // ============================================================
 // Pre-allocate reusable materials
-let beamGlowMat: any = null;
-let beamCoreMat: any = null;
-let beamGlowSphereGeom: any = null;
-let beamGlowSphereMat: any = null;
-let beamCoreSphereGeom: any = null;
-let beamCoreSphereMat: any = null;
+let beamGlowMat: LineBasicMaterial | null = null;
+let beamCoreMat: LineBasicMaterial | null = null;
+let beamGlowSphereGeom: SphereGeometry | null = null;
+let beamGlowSphereMat: MeshBasicMaterial | null = null;
+let beamCoreSphereGeom: SphereGeometry | null = null;
+let beamCoreSphereMat: MeshBasicMaterial | null = null;
 
-function initBeamMaterials() {
+const initBeamMaterials = (): void => {
   if (!THREE) return;
   beamGlowMat = new THREE.LineBasicMaterial({
     color: 0x20ff40,
@@ -620,9 +640,9 @@ function initBeamMaterials() {
     opacity: 1,
     depthTest: false,
   });
-}
+};
 
-function updateBeamGroup() {
+const updateBeamGroup = (): void => {
   if (!THREE || !beamGroup) return;
   // Dispose old children properly
   for (const child of beamGroup.children) {
@@ -647,8 +667,9 @@ function updateBeamGroup() {
 
   for (const e of electrons) {
     if (e.trail.length < 2) continue;
-    const points: import("three").Vector3[] = [];
-    for (const t of e.trail) points.push(new THREE.Vector3(t.x, t.y, t.z));
+    const points: Vector3[] = [];
+    for (const trailPoint of e.trail)
+      points.push(new THREE.Vector3(trailPoint.x, trailPoint.y, trailPoint.z));
 
     // Glow line
     const glowGeom = new THREE.BufferGeometry().setFromPoints(points);
@@ -668,184 +689,189 @@ function updateBeamGroup() {
     sphere.position.set(e.x, e.y, e.z);
     beamGroup.add(sphere);
   }
-}
+};
 
 // ============================================================
 // Labels
 // ============================================================
-function buildLabels() {
+const buildLabels = (): Group | null => {
   if (!THREE) return null;
   const group = new THREE.Group();
 
-  function addLabel(text: string, x: number, y: number, z: number, color: string) {
+  const addLabel = (
+    text: string,
+    position: { labelX: number; labelY: number; labelZ: number },
+    labelColor: string,
+  ): void => {
     const canvas = document.createElement("canvas");
     canvas.width = 256;
     canvas.height = 128;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = color;
-    ctx.font = "bold 64px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(text, 128, 64);
+    const context2d = canvas.getContext("2d");
+    if (!context2d) return;
+    context2d.fillStyle = labelColor;
+    context2d.font = "bold 64px Arial";
+    context2d.textAlign = "center";
+    context2d.textBaseline = "middle";
+    context2d.fillText(text, 128, 64);
     const tex = new THREE.CanvasTexture(canvas);
     tex.minFilter = THREE.LinearFilter;
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
-    const sprite = new THREE.Sprite(mat);
-    sprite.position.set(x, y, z);
+    const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.position.set(position.labelX, position.labelY, position.labelZ);
     sprite.scale.set(24, 12, 1);
     group.add(sprite);
-  }
+  };
 
-  const ym = (YY_S + YY_E) / 2,
-    xm = (XX_S + XX_E) / 2;
-  addLabel("Y", ym, PLATE_GAP + 18, 0, "#8ab4f8");
-  addLabel("Y'", ym, -PLATE_GAP - 18, 0, "#8ab4f8");
-  addLabel("X'", xm, 0, PLATE_GAP + 18, "#8ab4f8");
-  addLabel("X", xm, 0, -PLATE_GAP - 18, "#8ab4f8");
+  const yMid = (YY_PLATE_START + YY_PLATE_END) / 2;
+  const xMid = (XX_PLATE_START + XX_PLATE_END) / 2;
+  addLabel("Y", yMid, PLATE_GAP + 18, 0, "#8ab4f8");
+  addLabel("Y'", yMid, -PLATE_GAP - 18, 0, "#8ab4f8");
+  addLabel("X'", xMid, 0, PLATE_GAP + 18, "#8ab4f8");
+  addLabel("X", xMid, 0, -PLATE_GAP - 18, "#8ab4f8");
   addLabel("电子枪", 40, -16, 0, "#6a8aa8");
-  addLabel("荧光屏", SCR_X, -112, 0, "#5a7a9c");
+  addLabel("荧光屏", SCREEN_X, -112, 0, "#5a7a9c");
   return group;
-}
+};
 
 // ============================================================
 // Physics simulation
 // ============================================================
-function spawnElectron() {
+const spawnElectron = (): void => {
   electrons.push({
-    x: GUN_X,
+    x: ELECTRON_GUN_X,
     y: 0,
     z: 0,
-    vx: VX,
+    vx: INITIAL_VELOCITY_X,
     vy: 0,
     vz: 0,
-    bp: gPhase,
+    birthPhase: gPhase,
     sVy: null,
     sVx: 0,
     trail: [],
     alive: true,
   });
-}
+};
 
-function updateElectrons() {
+const updateElectrons = (): void => {
   for (const e of electrons) {
     if (!e.alive) continue;
     if (e.sVy == null) {
-      e.sVy = scenarios[curSc].Vy(e.bp);
-      e.sVx = scenarios[curSc].Vx(e.bp);
+      e.sVy = scenarios[curSc].voltageY(e.birthPhase);
+      e.sVx = scenarios[curSc].voltageX(e.birthPhase);
     }
     e.trail.push({ x: e.x, y: e.y, z: e.z });
-    if (e.trail.length > TRAIL) e.trail.shift();
-    if (e.x >= YY_S && e.x <= YY_E) e.vy += e.sVy * AY_S;
-    if (e.x >= XX_S && e.x <= XX_E) e.vz -= e.sVx * AX_S;
+    if (e.trail.length > TRAIL_LENGTH) e.trail.shift();
+    if (e.x >= YY_PLATE_START && e.x <= YY_PLATE_END) e.vy += e.sVy * YY_DEFLECTION_SENSITIVITY;
+    if (e.x >= XX_PLATE_START && e.x <= XX_PLATE_END) e.vz -= e.sVx * XX_DEFLECTION_SENSITIVITY;
     e.x += e.vx;
     e.y += e.vy;
     e.z += e.vz;
-    if (e.x >= SCR_X) {
+    if (e.x >= SCREEN_X) {
       impacts.push({ y: e.y, z: e.z, age: 0 });
       e.alive = false;
     }
     if (Math.abs(e.y) > 150 || Math.abs(e.z) > 150) e.alive = false;
   }
-  electrons = electrons.filter((e) => e.alive);
+  electrons = electrons.filter((electron) => electron.alive);
   for (const imp of impacts) imp.age += 1;
   impacts = impacts.filter((imp) => imp.age < persistence);
-}
+};
 
 // ============================================================
 // 2D Screen inset
 // ============================================================
-function drawScreenInset() {
+const drawScreenInset = (): void => {
   const canvas = screenInsetRef.value;
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-  const w = canvas.width,
-    h = canvas.height;
+  const h = canvas.height,
+    w = canvas.width;
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = "#060a12";
   ctx.fillRect(0, 0, w, h);
-  const margin = 50,
-    sw = w - 2 * margin,
-    sh = h - 2 * margin,
-    cx = w / 2,
-    cy = h / 2;
+  const margin = 50;
+  const screenW = w - 2 * margin;
+  const screenH = h - 2 * margin;
+  const centerX = w / 2;
+  const centerY = h / 2;
   ctx.strokeStyle = "rgba(74,144,217,0.18)";
   ctx.lineWidth = 1;
   for (let i = 1; i < 8; i++) {
-    const gx = margin + (sw / 8) * i,
-      gy = margin + (sh / 8) * i;
+    const gridX = margin + (screenW / 8) * i;
+    const gridY = margin + (screenH / 8) * i;
     ctx.beginPath();
-    ctx.moveTo(gx, margin);
-    ctx.lineTo(gx, margin + sh);
+    ctx.moveTo(gridX, margin);
+    ctx.lineTo(gridX, margin + screenH);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(margin, gy);
-    ctx.lineTo(margin + sw, gy);
+    ctx.moveTo(margin, gridY);
+    ctx.lineTo(margin + screenW, gridY);
     ctx.stroke();
   }
   ctx.strokeStyle = "rgba(138,180,248,0.5)";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(cx, margin);
-  ctx.lineTo(cx, margin + sh);
+  ctx.moveTo(centerX, margin);
+  ctx.lineTo(centerX, margin + screenH);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(margin, cy);
-  ctx.lineTo(margin + sw, cy);
+  ctx.moveTo(margin, centerY);
+  ctx.lineTo(margin + screenW, centerY);
   ctx.stroke();
-  const scaleX = sw / 200,
-    scaleY = sh / 200;
+  const scaleX = screenW / 200;
+  const scaleY = screenH / 200;
   for (const imp of impacts) {
     const alpha = Math.max(0, 1 - imp.age / persistence);
-    const px = cx - imp.z * scaleX,
-      py = cy - imp.y * scaleY;
-    const r = 4 + (1 - alpha) * 5;
-    const glow = ctx.createRadialGradient(px, py, 0, px, py, r * 2);
+    const pixelX = centerX - imp.z * scaleX;
+    const pixelY = centerY - imp.y * scaleY;
+    const radius = 4 + (1 - alpha) * 5;
+    const glow = ctx.createRadialGradient(pixelX, pixelY, 0, pixelX, pixelY, radius * 2);
     glow.addColorStop(0, `rgba(180,255,140,${Number(alpha)})`);
     glow.addColorStop(0.2, `rgba(60,255,60,${alpha * 0.8})`);
     glow.addColorStop(0.5, `rgba(0,200,30,${alpha * 0.35})`);
     glow.addColorStop(1, "rgba(0,200,30,0)");
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(px, py, r * 2, 0, Math.PI * 2);
+    ctx.arc(pixelX, pixelY, radius * 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = `rgba(200,255,180,${alpha})`;
     ctx.beginPath();
-    ctx.arc(px, py, r * 0.35, 0, Math.PI * 2);
+    ctx.arc(pixelX, pixelY, radius * 0.35, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.strokeStyle = "rgba(100,170,240,0.4)";
   ctx.lineWidth = 2;
-  ctx.strokeRect(margin, margin, sw, sh);
-}
+  ctx.strokeRect(margin, margin, screenW, screenH);
+};
 
 // ============================================================
 // 2D U-t charts
 // ============================================================
-function drawUtChart(
+const drawUtChart = (
   canvasRef: HTMLCanvasElement | null,
-  voltageFunc: (p: number) => number,
+  voltageFunc: (phase: number) => number,
   color: string,
   currentPhase: number,
-) {
+): void => {
   if (!canvasRef) return;
   const rect = canvasRef.getBoundingClientRect();
-  const dw = Math.floor(rect.width),
-    dh = Math.floor(rect.height);
-  if (dw <= 0 || dh <= 0) return;
-  if (canvasRef.width !== dw || canvasRef.height !== dh) {
-    canvasRef.width = dw;
-    canvasRef.height = dh;
+  const displayW = Math.floor(rect.width);
+  const displayH = Math.floor(rect.height);
+  if (displayW <= 0 || displayH <= 0) return;
+  if (canvasRef.width !== displayW || canvasRef.height !== displayH) {
+    canvasRef.width = displayW;
+    canvasRef.height = displayH;
   }
-  const w = canvasRef.width,
-    h = canvasRef.height;
+  const h = canvasRef.height,
+    w = canvasRef.width;
   const ctx = canvasRef.getContext("2d");
   if (!ctx) return;
   ctx.clearRect(0, 0, w, h);
   const pad = { top: 16, bottom: 16, left: 4, right: 4 };
-  const gw = w - pad.left - pad.right,
-    gh = h - pad.top - pad.bottom;
-  const centerY = pad.top + gh / 2;
+  const graphW = w - pad.left - pad.right;
+  const graphH = h - pad.top - pad.bottom;
+  const centerY = pad.top + graphH / 2;
   ctx.strokeStyle = "rgba(255,255,255,0.15)";
   ctx.lineWidth = 0.8;
   ctx.setLineDash([3, 3]);
@@ -860,30 +886,30 @@ function drawUtChart(
   ctx.fillText("+1", 1, pad.top + 8);
   ctx.fillText(" 0", 1, centerY + 3);
   ctx.fillText("-1", 1, h - pad.bottom + 1);
-  const maxAmp = gh / 2 - 4;
+  const maxAmp = graphH / 2 - 4;
   ctx.beginPath();
   ctx.strokeStyle = color;
   ctx.lineWidth = 1.8;
-  const step = Math.max(1, Math.floor(gw / 180));
+  const step = Math.max(1, Math.floor(graphW / 180));
   let first = true;
-  for (let i = 0; i < gw; i += step) {
-    const v = voltageFunc(currentPhase - (gw - i) * 1.5);
-    const x = pad.left + i,
-      y = centerY - v * maxAmp;
+  for (let i = 0; i < graphW; i += step) {
+    const voltage = voltageFunc(currentPhase - (graphW - i) * 1.5);
+    const lineX = pad.left + i;
+    const lineY = centerY - voltage * maxAmp;
     if (first) {
-      ctx.moveTo(x, y);
+      ctx.moveTo(lineX, lineY);
       first = false;
     } else {
-      ctx.lineTo(x, y);
+      ctx.lineTo(lineX, lineY);
     }
   }
   ctx.stroke();
-}
+};
 
 // ============================================================
 // Scene init
 // ============================================================
-async function initScene() {
+const initScene = async (): Promise<void> => {
   await loadThree();
   if (!THREE || !containerRef.value) return;
 
@@ -904,7 +930,7 @@ async function initScene() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   containerRef.value.append(renderer.domElement);
 
-  orbit = new OrbitControlsClass(camera, renderer.domElement);
+  orbit = new OrbitControlsCtor(camera, renderer.domElement);
   orbit.enableDamping = true;
   orbit.dampingFactor = 0.08;
   orbit.target.set(220, 0, 0);
@@ -920,10 +946,10 @@ async function initScene() {
     [200, 100, 300, 0.3],
     [300, 0, -300, 0.3],
   ];
-  for (const [x, y, z, i] of lights) {
-    const l = new THREE.DirectionalLight(0xccddff, i);
-    l.position.set(x, y, z);
-    scene.add(l);
+  for (const [lightX, lightY, lightZ, intensity] of lights) {
+    const dirLight = new THREE.DirectionalLight(0xccddff, intensity);
+    dirLight.position.set(lightX, lightY, lightZ);
+    scene.add(dirLight);
   }
 
   const gridHelper = new THREE.GridHelper(600, 30, 0x1a2844, 0x111a2e);
@@ -955,18 +981,18 @@ async function initScene() {
   beamGroup = new THREE.Group();
   scene.add(beamGroup);
   initBeamMaterials();
-}
+};
 
 // ============================================================
 // Animation loop
 // ============================================================
-function animate() {
+const animate = (): void => {
   animFrame = requestAnimationFrame(animate);
   if (!THREE || !renderer || !scene || !camera) return;
 
   if (!isPaused) {
     spawnT += 1;
-    if (spawnT >= SPAWN_INT) {
+    if (spawnT >= SPAWN_INTERVAL) {
       spawnElectron();
       spawnT = 0;
     }
@@ -979,20 +1005,20 @@ function animate() {
   updateScreenTexture();
   drawScreenInset();
 
-  const s = scenarios[curSc];
-  drawUtChart(utYYRef.value, s.Vy, "#ff8a80", gPhase);
-  drawUtChart(utXXRef.value, s.Vx, "#82b1ff", gPhase);
+  const scenario = scenarios[curSc];
+  drawUtChart(utYYRef.value, scenario.voltageY, "#ff8a80", gPhase);
+  drawUtChart(utXXRef.value, scenario.voltageX, "#82b1ff", gPhase);
 
   if (orbit) orbit.update();
   renderer.render(scene, camera);
-}
+};
 
-function onResize() {
+const onResize = (): void => {
   if (!THREE || !camera || !renderer || !containerRef.value) return;
   camera.aspect = containerRef.value.clientWidth / containerRef.value.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(containerRef.value.clientWidth, containerRef.value.clientHeight);
-}
+};
 
 // ============================================================
 // Reactive state
@@ -1005,37 +1031,37 @@ const showVoltageDisplay = ref(true);
 const vyLabel = ref(scenarios[0].vyI);
 const vxLabel = ref(scenarios[0].vxI);
 const persistenceVal = ref("90帧");
-const cYMode = ref(0),
-  cYAmp = ref(0.8),
-  cYAmpValDisplay = ref("0.8");
-const cXMode = ref(0),
-  cXAmp = ref(0.8),
-  cXAmpValDisplay = ref("0.8");
+const cYAmp = ref(0.8);
+const cYAmpValDisplay = ref("0.8");
+const cYMode = ref(0);
+const cXAmp = ref(0.8);
+const cXAmpValDisplay = ref("0.8");
+const cXMode = ref(0);
 
-function setScenario(i: number): void {
-  curSc = i;
+const setScenario = (index: number): void => {
+  curSc = index;
   electrons = [];
   impacts = [];
   gPhase = 0;
-  const s = scenarios[i];
-  scenarioName.value = s.name;
-  scenarioSub.value = s.sub;
-  scenarioDesc.value = s.desc;
-  if (s.isCustom) {
+  const scenario = scenarios[index];
+  scenarioName.value = scenario.name;
+  scenarioSub.value = scenario.sub;
+  scenarioDesc.value = scenario.desc;
+  if (scenario.isCustom) {
     showVoltageDisplay.value = false;
     showCustomControls.value = true;
   } else {
     showVoltageDisplay.value = true;
     showCustomControls.value = false;
-    vyLabel.value = s.vyI;
-    vxLabel.value = s.vxI;
+    vyLabel.value = scenario.vyI;
+    vxLabel.value = scenario.vxI;
   }
-}
-function updatePersistence(val: number): void {
+};
+const updatePersistence = (val: number): void => {
   persistence = val;
   persistenceVal.value = `${val}帧`;
-}
-function updateCustomParams(): void {
+};
+const updateCustomParams = (): void => {
   customParams.yMode = cYMode.value;
   customParams.xMode = cXMode.value;
   customParams.yAmp = cYAmp.value;
@@ -1044,45 +1070,45 @@ function updateCustomParams(): void {
   cXAmpValDisplay.value = cXAmp.value.toFixed(1);
   electrons = [];
   impacts = [];
-}
-function resetView(): void {
+};
+const resetView = (): void => {
   orbit.target.set(220, 0, 0);
   camera.position.set(-200, 80, 320);
   camera.lookAt(220, 0, 0);
   orbit.update();
-}
-function viewFront(): void {
+};
+const viewFront = (): void => {
   orbit.target.set(220, 0, 0);
   camera.position.set(220, 0, 500);
   camera.lookAt(220, 0, 0);
   orbit.update();
-}
-function viewSide(): void {
+};
+const viewSide = (): void => {
   orbit.target.set(220, 0, 0);
   camera.position.set(220, 500, 0);
   camera.lookAt(220, 0, 0);
   orbit.update();
-}
-function viewTop(): void {
+};
+const viewTop = (): void => {
   orbit.target.set(220, 0, 0);
   camera.position.set(220, 500, 1);
   camera.lookAt(220, 0, 0);
   orbit.update();
-}
+};
 
 // ============================================================
 // Keyboard
 // ============================================================
-function onKeydown(e: KeyboardEvent): void {
-  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+const onKeydown = (event: KeyboardEvent): void => {
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
     setScenario((curSc + 1) % 12);
-  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
     setScenario((curSc - 1 + 12) % 12);
-  } else if (e.key === " ") {
-    e.preventDefault();
+  } else if (event.key === " ") {
+    event.preventDefault();
     isPaused = !isPaused;
   }
-}
+};
 
 // ============================================================
 // Lifecycle
@@ -1096,7 +1122,8 @@ onMounted(async () => {
     screenInsetRef.value.height = 460;
   }
   setScenario(0);
-  initScene().then(() => animate());
+  await initScene();
+  animate();
 });
 
 onBeforeUnmount(() => {

@@ -1,5 +1,5 @@
 export const GRAVITY = 9.8; // m/s^2
-export const DT = 0.016; // Time step (approx 60fps)
+export const TIME_STEP = 0.016; // Time step (approx 60fps)
 export const PIXELS_PER_METER = 125;
 
 // Vector Scaling factors

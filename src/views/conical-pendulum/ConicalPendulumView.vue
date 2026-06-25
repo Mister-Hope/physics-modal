@@ -18,7 +18,7 @@ const pendulums = ref<PendulumConfig[]>([{ ...PENDULUM_PRESETS[0] }]);
 const angularVelocity = computed(() => Math.sqrt(GRAVITY / height.value));
 const period = computed(() => (2 * Math.PI) / angularVelocity.value);
 
-const minLength = computed(() => Math.min(...pendulums.value.map((p) => p.length)));
+const minLength = computed(() => Math.min(...pendulums.value.map((pendulum) => pendulum.length)));
 const maxHeight = computed(() => minLength.value * 0.99);
 
 // Auto-correct height
@@ -30,21 +30,23 @@ const handleHeightChange = (newHeight: number): void => {
   if (newHeight > maxHeight.value) height.value = maxHeight.value;
 };
 
-function handlePendulumUpdate(id: number, updates: Partial<PendulumConfig>): void {
-  pendulums.value = pendulums.value.map((p) => (p.id === id ? { ...p, ...updates } : p));
-}
+const handlePendulumUpdate = (id: number, updates: Partial<PendulumConfig>): void => {
+  pendulums.value = pendulums.value.map((pendulum) =>
+    pendulum.id === id ? { ...pendulum, ...updates } : pendulum,
+  );
+};
 
-function handleAddPendulum(): void {
+const handleAddPendulum = (): void => {
   if (pendulums.value.length >= 3) return;
   const nextPresetIndex = pendulums.value.length;
   if (nextPresetIndex < PENDULUM_PRESETS.length)
     pendulums.value = [...pendulums.value, { ...PENDULUM_PRESETS[nextPresetIndex] }];
-}
+};
 
-function handleRemovePendulum(): void {
+const handleRemovePendulum = (): void => {
   if (pendulums.value.length <= 1) return;
   pendulums.value = pendulums.value.slice(0, -1);
-}
+};
 </script>
 
 <template>

@@ -7,12 +7,12 @@ interface Props {
   darkMode?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
-  gradient: false,
-  light: false,
-  showDarkToggle: false,
-  darkMode: false,
-});
+const {
+  gradient = false,
+  light = false,
+  showDarkToggle = false,
+  darkMode = false,
+} = defineProps<Props>();
 
 const emit = defineEmits<{
   "update:darkMode": [value: boolean];

@@ -9,20 +9,17 @@ interface Props {
   digits?: number;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  step: 1,
-  unit: "",
-  digits: 1,
-});
+// oxlint-disable vue/max-props
+const { step = 1, unit = "", digits = 1 } = defineProps<Props>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: number];
 }>();
 
-function onInput(event: Event): void {
+const onInput = (event: Event): void => {
   const target = event.target as HTMLInputElement;
   emit("update:modelValue", Number(target.value));
-}
+};
 </script>
 
 <template>

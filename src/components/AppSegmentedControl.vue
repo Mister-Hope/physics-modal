@@ -5,9 +5,7 @@ interface Props {
   disabled?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
-  disabled: false,
-});
+const { disabled = false } = defineProps<Props>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: T];

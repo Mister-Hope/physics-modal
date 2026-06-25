@@ -4,11 +4,11 @@ import type { PhysicsResult } from "../types";
 export const G = 9.8;
 export const TRAIN_MASS = 1000;
 
-export function calculatePhysics(
+export const calculatePhysics = (
   velocity: number,
   angleDeg: number,
   radius: number,
-): PhysicsResult {
+): PhysicsResult => {
   const angleRad = (angleDeg * Math.PI) / 180;
   const idealVelocity = Math.sqrt(G * radius * Math.tan(angleRad));
   const centripetalAccel = (velocity * velocity) / radius;
@@ -36,4 +36,4 @@ export function calculatePhysics(
     gravity,
     status,
   };
-}
+};

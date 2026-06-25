@@ -11,11 +11,8 @@ interface Props {
   digits?: number;
 }
 
-withDefaults(defineProps<Props>(), {
-  colorClass: "text-slate-100",
-  hexColor: "",
-  digits: 2,
-});
+// oxlint-disable-next-line vue/max-props
+const { colorClass = "text-slate-100", hexColor = "", digits = 2 } = defineProps<Props>();
 </script>
 
 <template>
