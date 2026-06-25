@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { useEventListener, useMounted, useRafFn } from "@vueuse/core";
+import { ref } from "vue";
 
 import { GRAVITY } from "../constants";
 import type { PendulumConfig } from "../types";
@@ -17,7 +18,7 @@ const canvasRef = ref<HTMLCanvasElement>();
 const isDragging = ref(false);
 const lastMousePos = ref({ x: 0, y: 0 });
 
-let animationRef: number | null = null;
+const animationRef: number | null = null;
 let timeAccum = 0;
 let lastFrameTime = 0;
 
@@ -57,7 +58,7 @@ const project = (
   };
 };
 
-const render = (timestamp: number): void => {
+useRafFn(({ timestamp }) => {
   const canvas = canvasRef.value;
   const ctx = canvas?.getContext("2d");
   if (!canvas || !ctx) return;
@@ -306,9 +307,7 @@ const render = (timestamp: number): void => {
     ctx.fillStyle = "#fff";
     ctx.fillText(labelText, obj.pos.x, obj.pos.y + bobSize + 15);
   });
-
-  animationRef = requestAnimationFrame(render);
-};
+});
 
 const handleResize = (): void => {
   if (canvasRef.value?.parentElement) {
@@ -316,6 +315,8 @@ const handleResize = (): void => {
     canvasRef.value.height = canvasRef.value.parentElement.clientHeight;
   }
 };
+
+useEventListener(globalThis, "resize", handleResize);
 
 const onMouseDown = (event: MouseEvent): void => {
   isDragging.value = true;
@@ -335,15 +336,8 @@ const onMouseUp = (): void => {
   isDragging.value = false;
 };
 
-onMounted(() => {
-  window.addEventListener("resize", handleResize);
+useMounted(() => {
   handleResize();
-  animationRef = requestAnimationFrame(render);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", handleResize);
-  if (animationRef != null) cancelAnimationFrame(animationRef);
 });
 </script>
 

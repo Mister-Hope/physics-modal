@@ -33,6 +33,9 @@ export default defineHopeConfig(
             // 尺寸
             "w", // 宽度 width
             "h", // 高度 height
+            "sm", // small size
+            "md", // medium size
+            "lg", // large size
 
             // 颜色分量
             "r", // 红色 red
@@ -48,8 +51,15 @@ export default defineHopeConfig(
             "nx", // 法线 x normal x
             "ny", // 法线 y normal y
             "nz", // 法线 z normal z
+            "k1", // RK4 系数
+            "k2",
+            "k3",
+            "k4",
             "E", // 电场强度 electric field
             "dt", // 时间微元 (delta time)
+            "ix", // 网格索引 x
+            "iy", // 网格索引 y
+            "iz", // 网格索引 z
             "e", // 电子 electron
           ],
           exceptionPatterns: [

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onKeyStroke, useEventListener, useRafFn } from "@vueuse/core";
 import type {
   Camera,
   CanvasTexture,
@@ -59,7 +60,6 @@ let plateXX_right: Mesh | null = null;
 let plateYY_bot: Mesh | null = null;
 let plateYY_top: Mesh | null = null;
 let beamGroup: Group | null = null;
-let animFrame = 0;
 const screenCanvasW = 512;
 const screenCanvasH = 512;
 
@@ -986,8 +986,7 @@ const initScene = async (): Promise<void> => {
 // ============================================================
 // Animation loop
 // ============================================================
-const animate = (): void => {
-  animFrame = requestAnimationFrame(animate);
+useRafFn(() => {
   if (!THREE || !renderer || !scene || !camera) return;
 
   if (!isPaused) {
@@ -1011,7 +1010,7 @@ const animate = (): void => {
 
   if (orbit) orbit.update();
   renderer.render(scene, camera);
-};
+});
 
 const onResize = (): void => {
   if (!THREE || !camera || !renderer || !containerRef.value) return;
@@ -1019,6 +1018,7 @@ const onResize = (): void => {
   camera.updateProjectionMatrix();
   renderer.setSize(containerRef.value.clientWidth, containerRef.value.clientHeight);
 };
+useEventListener(globalThis, "resize", onResize);
 
 // ============================================================
 // Reactive state
@@ -1099,37 +1099,31 @@ const viewTop = (): void => {
 // ============================================================
 // Keyboard
 // ============================================================
-const onKeydown = (event: KeyboardEvent): void => {
-  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-    setScenario((curSc + 1) % 12);
-  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-    setScenario((curSc - 1 + 12) % 12);
-  } else if (event.key === " ") {
-    event.preventDefault();
-    isPaused = !isPaused;
-  }
-};
+onKeyStroke(["ArrowRight", "ArrowDown"], () => {
+  setScenario((curSc + 1) % 12);
+});
+onKeyStroke(["ArrowLeft", "ArrowUp"], () => {
+  setScenario((curSc - 1 + 12) % 12);
+});
+onKeyStroke(" ", (event) => {
+  event.preventDefault();
+  isPaused = !isPaused;
+});
 
 // ============================================================
 // Lifecycle
 // ============================================================
 onMounted(async () => {
   await nextTick();
-  document.addEventListener("keydown", onKeydown);
-  window.addEventListener("resize", onResize);
   if (screenInsetRef.value) {
     screenInsetRef.value.width = 460;
     screenInsetRef.value.height = 460;
   }
   setScenario(0);
   await initScene();
-  animate();
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener("keydown", onKeydown);
-  window.removeEventListener("resize", onResize);
-  cancelAnimationFrame(animFrame);
   if (renderer) renderer.dispose();
   if (beamGlowMat) beamGlowMat.dispose();
   if (beamCoreMat) beamCoreMat.dispose();

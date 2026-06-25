@@ -46,7 +46,7 @@ const Physics = {
   k: 8.99,
 
   electricField(
-    point: { distanceTo: (pt: unknown) => number; clone: () => unknown },
+    point: { distanceTo: (point: unknown) => number; clone: () => unknown },
     charges: { position: unknown; charge: number }[],
   ): THREE.Vector3 {
     if (!THREE) return new THREE.Vector3(0, 0, 0);
@@ -67,13 +67,15 @@ const Physics = {
   },
 
   potential(
-    point: { distanceTo: (pt: unknown) => number },
+    point: { distanceTo: (point: unknown) => number },
     charges: { position: unknown; charge: number }[],
   ): number {
     // 叠加所有电荷在该点的电势：V = Σ kqᵢ / rᵢ
     let potential = 0;
     for (const charge of charges) {
-      const dist = (point as { distanceTo: (pt: unknown) => number }).distanceTo(charge.position);
+      const dist = (point as { distanceTo: (point: unknown) => number }).distanceTo(
+        charge.position,
+      );
       if (dist < 0.2) return charge.charge > 0 ? 1e6 : -1e6;
       potential += (this.k * charge.charge) / dist;
     }
@@ -254,14 +256,14 @@ const buildChargeMeshes = (): void => {
   const chargeGeom = new THREE.SphereGeometry(0.35, 32, 32);
 
   for (let i = 0; i < chargeData.length; i++) {
-    const cd = chargeData[i];
-    const mesh = new THREE.Mesh(chargeGeom, createChargeMaterial(cd.charge));
-    mesh.position.copy(cd.position as THREE.Vector3);
+    const charge = chargeData[i];
+    const mesh = new THREE.Mesh(chargeGeom, createChargeMaterial(charge.charge));
+    mesh.position.copy(charge.position as THREE.Vector3);
     mesh.userData.chargeIndex = i;
     scene.add(mesh);
     chargeMeshes.push(mesh);
 
-    const label = createChargeLabel(cd.charge);
+    const label = createChargeLabel(charge.charge);
     label.position.set(0, 0, 0);
     mesh.add(label);
   }
@@ -309,9 +311,9 @@ const buildFieldLines = (): void => {
   // 黄金角度 = π(3-√5)，用于 Fibonacci 球面均匀分布
   const goldenAngle = Math.PI * (3 - Math.sqrt(5));
 
-  for (const sc of startCharges) {
+  for (const startCharge of startCharges) {
     // 电场线数与电荷量成正比（最少 4 条）
-    const nLines = Math.max(4, Math.round((baseLineCount * Math.abs(sc.charge)) / maxQ));
+    const nLines = Math.max(4, Math.round((baseLineCount * Math.abs(startCharge.charge)) / maxQ));
 
     for (let i = 0; i < nLines; i++) {
       // Fibonacci sphere: 球面上均匀分布采样
@@ -320,11 +322,11 @@ const buildFieldLines = (): void => {
       const radiusAtY = Math.sqrt(1 - y * y);
       const theta = goldenAngle * i;
 
-      const sp = sc.position as THREE.Vector3;
+      const chargePos = startCharge.position as THREE.Vector3;
       const startPos = new THREE.Vector3(
-        sp.x + startRadius * radiusAtY * Math.cos(theta),
-        sp.y + startRadius * y,
-        sp.z + startRadius * radiusAtY * Math.sin(theta),
+        chargePos.x + startRadius * radiusAtY * Math.cos(theta),
+        chargePos.y + startRadius * y,
+        chargePos.z + startRadius * radiusAtY * Math.sin(theta),
       );
 
       const points = Physics.traceFieldLine(startPos, chargeData, lineDir, 500, 0.12);
@@ -333,8 +335,8 @@ const buildFieldLines = (): void => {
       const tubePoints = curve.getPoints(Math.min(points.length * 2, 200));
       const geometry = new THREE.BufferGeometry().setFromPoints(tubePoints);
       const colors: number[] = [];
-      for (const tp of tubePoints) {
-        const eField = Physics.electricField(tp, chargeData);
+      for (const tubePoint of tubePoints) {
+        const eField = Physics.electricField(tubePoint, chargeData);
         const mag = Math.min(eField.length() / 5, 1);
         colors.push(0.3 + mag * 0.7, 0.5 + mag * 0.3, 1 - mag * 0.3);
       }
@@ -348,9 +350,13 @@ const buildFieldLines = (): void => {
 
       if (showArrows && tubePoints.length > 4) {
         const arrowSpacing = Math.max(Math.floor(tubePoints.length / 4), 3);
-        for (let aa = arrowSpacing; aa < tubePoints.length - 2; aa += arrowSpacing) {
-          const pos = tubePoints[aa];
-          const nextPos = tubePoints[Math.min(aa + 1, tubePoints.length - 1)];
+        for (
+          let arrowIdx = arrowSpacing;
+          arrowIdx < tubePoints.length - 2;
+          arrowIdx += arrowSpacing
+        ) {
+          const pos = tubePoints[arrowIdx];
+          const nextPos = tubePoints[Math.min(arrowIdx + 1, tubePoints.length - 1)];
           const arrowDir = new THREE.Vector3().subVectors(nextPos, pos).normalize();
           const arrowGeom = new THREE.ConeGeometry(0.08, 0.25, 6);
           const arrowMat = new THREE.MeshPhongMaterial({
@@ -411,21 +417,21 @@ const marchingCubes = (
   const getPos = (ix: number, iy: number, iz: number): THREE.Vector3 =>
     new THREE.Vector3(-extent + ix * step, -extent + iy * step, -extent + iz * step);
 
-  // 线性插值：在 p1(v1) 和 p2(v2) 之间找到等值点
+  // 线性插值：在 point1(v1) 和 point2(v2) 之间找到等值点
   const interpolate = (
-    p1: THREE.Vector3,
-    p2: THREE.Vector3,
+    point1: THREE.Vector3,
+    point2: THREE.Vector3,
     v1: number,
     v2: number,
   ): THREE.Vector3 => {
-    if (Math.abs(isoVal - v1) < 1e-10) return p1.clone();
-    if (Math.abs(isoVal - v2) < 1e-10) return p2.clone();
-    if (Math.abs(v1 - v2) < 1e-10) return p1.clone();
+    if (Math.abs(isoVal - v1) < 1e-10) return point1.clone();
+    if (Math.abs(isoVal - v2) < 1e-10) return point2.clone();
+    if (Math.abs(v1 - v2) < 1e-10) return point1.clone();
     const frac = (isoVal - v1) / (v2 - v1);
     return new THREE.Vector3(
-      p1.x + frac * (p2.x - p1.x),
-      p1.y + frac * (p2.y - p1.y),
-      p1.z + frac * (p2.z - p1.z),
+      point1.x + frac * (point2.x - point1.x),
+      point1.y + frac * (point2.y - point1.y),
+      point1.z + frac * (point2.z - point1.z),
     );
   };
 
@@ -527,8 +533,8 @@ const buildEquipotentialSurfaces = (): void => {
           z = -extent + iz * step;
         const point = new THREE.Vector3(x, y, z);
         let tooClose = false;
-        for (const cd of chargeData) {
-          if (point.distanceTo(cd.position as THREE.Vector3) < 0.8) {
+        for (const charge of chargeData) {
+          if (point.distanceTo(charge.position as THREE.Vector3) < 0.8) {
             tooClose = true;
             break;
           }
@@ -738,8 +744,10 @@ const updateTestCharge = (dt: number): void => {
     testChargeActive = false;
     return;
   }
-  for (const cd of chargeData) {
-    if ((testChargeData.position as THREE.Vector3).distanceTo(cd.position as THREE.Vector3) < 0.6) {
+  for (const charge of chargeData) {
+    if (
+      (testChargeData.position as THREE.Vector3).distanceTo(charge.position as THREE.Vector3) < 0.6
+    ) {
       testChargeActive = false;
       return;
     }

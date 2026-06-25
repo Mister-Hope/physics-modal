@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useEventListener, useMounted } from "@vueuse/core";
+import { ref, watch } from "vue";
 
 import type { PhysicsResult, SimulationState } from "../types";
 
@@ -294,13 +295,10 @@ const handleResize = (): void => {
   draw();
 };
 
-onMounted(() => {
-  window.addEventListener("resize", handleResize);
-  draw();
-});
+useEventListener(globalThis, "resize", handleResize);
 
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", handleResize);
+useMounted(() => {
+  draw();
 });
 
 // Re-draw whenever props change

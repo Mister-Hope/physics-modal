@@ -7,7 +7,7 @@ import NavBar from "@/components/NavBar.vue";
 import ControlPanel from "./components/ControlPanel.vue";
 import DataDisplay from "./components/DataDisplay.vue";
 import Visualizer from "./components/Visualizer.vue";
-import { DT, GRAVITY } from "./constants";
+import { TIME_STEP, GRAVITY } from "./constants";
 import type { PhysicsParams, SimulationState, VectorConfig } from "./types";
 import { SimulationMode } from "./types";
 
@@ -110,10 +110,10 @@ const animate = (time: number): void => {
       let active = true;
       let nextState = { ...stateRef };
 
-      while (accumulatorRef >= DT && active) {
+      while (accumulatorRef >= TIME_STEP && active) {
         const prevState = nextState;
-        nextState = updatePhysics(nextState, params.value, DT);
-        accumulatorRef -= DT;
+        nextState = updatePhysics(nextState, params.value, TIME_STEP);
+        accumulatorRef -= TIME_STEP;
 
         if (
           mode.value === SimulationMode.PauseAtBottom &&

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useElementSize } from "@vueuse/core";
+import { computed, ref } from "vue";
 
 import {
   COLORS,
@@ -20,25 +21,7 @@ interface Props {
 const { state, params, vectors } = defineProps<Props>();
 
 const containerRef = ref<HTMLDivElement>();
-const width = ref(800);
-const height = ref(600);
-
-let resizeHandler: (() => void) | null = null;
-
-onMounted(() => {
-  resizeHandler = (): void => {
-    if (containerRef.value) {
-      width.value = containerRef.value.clientWidth;
-      height.value = containerRef.value.clientHeight;
-    }
-  };
-  window.addEventListener("resize", resizeHandler);
-  resizeHandler();
-});
-
-onBeforeUnmount(() => {
-  if (resizeHandler) window.removeEventListener("resize", resizeHandler);
-});
+const { width, height } = useElementSize(containerRef);
 
 const pivotX = computed(() => width.value / 2);
 const pivotY = 50;
