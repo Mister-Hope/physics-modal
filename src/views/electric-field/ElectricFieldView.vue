@@ -975,7 +975,7 @@ const onClearTestCharge = (): void => {
               max="10"
               step="0.5"
               :value="chargeA"
-              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [[&::-webkit-slider-thumb]:w-3.5::-webkit-slider-thumb]:w-4 [[&::-webkit-slider-thumb]:h-3.5::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
+              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
               @input="
                 onChargeAChange(Number(($event.target as HTMLInputElement).value));
                 chargeA = Number(($event.target as HTMLInputElement).value);
@@ -998,7 +998,7 @@ const onClearTestCharge = (): void => {
               max="10"
               step="0.5"
               :value="chargeB"
-              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [[&::-webkit-slider-thumb]:w-3.5::-webkit-slider-thumb]:w-4 [[&::-webkit-slider-thumb]:h-3.5::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
+              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
               @input="
                 onChargeBChange(Number(($event.target as HTMLInputElement).value));
                 chargeB = Number(($event.target as HTMLInputElement).value);
@@ -1028,7 +1028,7 @@ const onClearTestCharge = (): void => {
               max="20"
               step="1"
               :value="fieldLineCountVal"
-              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [[&::-webkit-slider-thumb]:w-3.5::-webkit-slider-thumb]:w-4 [[&::-webkit-slider-thumb]:h-3.5::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
+              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
               @input="
                 onFieldLineCountChange(Number(($event.target as HTMLInputElement).value));
                 fieldLineCountVal = Number(($event.target as HTMLInputElement).value);
@@ -1082,7 +1082,7 @@ const onClearTestCharge = (): void => {
               max="24"
               step="1"
               :value="equipCountVal"
-              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [[&::-webkit-slider-thumb]:w-3.5::-webkit-slider-thumb]:w-4 [[&::-webkit-slider-thumb]:h-3.5::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
+              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
               @input="
                 onEquipCountChange(Number(($event.target as HTMLInputElement).value));
                 equipCountVal = Number(($event.target as HTMLInputElement).value);
@@ -1100,7 +1100,7 @@ const onClearTestCharge = (): void => {
               max="0.6"
               step="0.05"
               :value="equipOpacityVal"
-              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [[&::-webkit-slider-thumb]:w-3.5::-webkit-slider-thumb]:w-4 [[&::-webkit-slider-thumb]:h-3.5::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
+              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
               @input="
                 onEquipOpacityChange(Number(($event.target as HTMLInputElement).value));
                 equipOpacityVal = Number(($event.target as HTMLInputElement).value);
@@ -1130,7 +1130,7 @@ const onClearTestCharge = (): void => {
               max="3"
               step="0.5"
               :value="testChargeQVal"
-              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [[&::-webkit-slider-thumb]:w-3.5::-webkit-slider-thumb]:w-4 [[&::-webkit-slider-thumb]:h-3.5::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
+              class="flex-1 h-1.5 mx-2 appearance-none bg-indigo-500/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(90,140,240,0.4)]"
               @input="
                 onTestChargeQChange(Number(($event.target as HTMLInputElement).value));
                 testChargeQVal = Number(($event.target as HTMLInputElement).value);
