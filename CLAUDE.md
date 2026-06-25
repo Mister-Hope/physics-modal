@@ -36,6 +36,8 @@ src/
     ├── train-turn/          # 火车转弯（异步路由，2D Canvas 渲染）
     ├── oscilloscope/        # 示波管（异步路由，2D Canvas 伪3D投影）
     └── electric-field/      # 异号电荷电场与等势面（异步路由，Three.js 3D渲染）
+        ├── ElectricFieldView.vue    # 主视图（~1150行）
+        └── marchingCubesTables.ts   # Marching Cubes 查找表（MC_EDGE_TABLE + MC_TRI_TABLE）
 ```
 
 ## 核心架构约定
