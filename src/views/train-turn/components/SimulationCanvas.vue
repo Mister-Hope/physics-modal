@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+
 import type { PhysicsResult, SimulationState } from "../types";
 
 interface Props {
@@ -28,7 +29,7 @@ function draw(): void {
   ctx.scale(dpr, dpr);
 
   const { width } = rect;
-  const {height} = rect;
+  const { height } = rect;
   ctx.clearRect(0, 0, width, height);
 
   const isDark = props.darkMode;
@@ -169,9 +170,12 @@ function draw(): void {
   // Forces
   if (props.state.forceMode !== "none") {
     const drawArrow = (
-      fromX: number, fromY: number,
-      vecX: number, vecY: number,
-      color: string, label: string,
+      fromX: number,
+      fromY: number,
+      vecX: number,
+      vecY: number,
+      color: string,
+      label: string,
       isDashed = false,
     ): void => {
       const headLength = 15;
@@ -194,8 +198,14 @@ function draw(): void {
 
       ctx.beginPath();
       ctx.moveTo(toX, toY);
-      ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
-      ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+      ctx.lineTo(
+        toX - headLength * Math.cos(angle - Math.PI / 6),
+        toY - headLength * Math.sin(angle - Math.PI / 6),
+      );
+      ctx.lineTo(
+        toX - headLength * Math.cos(angle + Math.PI / 6),
+        toY - headLength * Math.sin(angle + Math.PI / 6),
+      );
       ctx.fill();
 
       ctx.font = "bold 20px sans-serif";
@@ -295,7 +305,9 @@ watch(
 </script>
 
 <template>
-  <div class="w-full h-full bg-slate-50 rounded-xl overflow-hidden shadow-inner border border-slate-200">
+  <div
+    class="w-full h-full bg-slate-50 rounded-xl overflow-hidden shadow-inner border border-slate-200"
+  >
     <canvas ref="canvasRef" class="w-full h-full block" />
   </div>
 </template>

@@ -13,6 +13,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), {
   colorClass: "text-slate-100",
+  hexColor: "",
   digits: 2,
 });
 </script>

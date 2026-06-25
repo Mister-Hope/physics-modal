@@ -11,7 +11,9 @@ import Latex from "@/components/Latex.vue";
     <div class="space-y-6 text-base text-slate-300 leading-relaxed">
       <section>
         <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
-          <span class="w-5 h-5 rounded-full bg-blue-600 text-xs flex items-center justify-center">1</span>
+          <span class="w-5 h-5 rounded-full bg-blue-600 text-xs flex items-center justify-center"
+            >1</span
+          >
           受力分析
         </h3>
         <p class="mb-2 text-slate-400">
@@ -19,9 +21,7 @@ import Latex from "@/components/Latex.vue";
           由于小球在水平面上做匀速圆周运动，小球在竖直方向受力平衡，水平方向的合力充当向心力。
         </p>
         <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
-          <div class="mb-1">
-            竖直方向：<Latex block latex="F_T \cos\theta = mg" />
-          </div>
+          <div class="mb-1">竖直方向：<Latex block latex="F_T \cos\theta = mg" /></div>
           <div>
             水平方向：
             <Latex block latex="F_T \sin\theta = F_{n} = m \omega^2 r = m \frac{4\pi^2}{T^2} r" />
@@ -31,7 +31,9 @@ import Latex from "@/components/Latex.vue";
 
       <section>
         <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
-          <span class="w-5 h-5 rounded-full bg-blue-600 text-xs flex items-center justify-center">2</span>
+          <span class="w-5 h-5 rounded-full bg-blue-600 text-xs flex items-center justify-center"
+            >2</span
+          >
           几何关系
         </h3>
         <p class="mb-2 text-slate-400">
@@ -44,22 +46,20 @@ import Latex from "@/components/Latex.vue";
 
       <section>
         <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
-          <span class="w-5 h-5 rounded-full bg-blue-600 text-xs flex items-center justify-center">3</span>
+          <span class="w-5 h-5 rounded-full bg-blue-600 text-xs flex items-center justify-center"
+            >3</span
+          >
           联立求解
         </h3>
         <p class="mb-2 text-slate-400">将水平方程除以竖直方程：</p>
         <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
           <Latex block latex="\tan\theta = \frac{m \omega^2 r}{mg} = \frac{\omega^2 r}{g}" />
         </div>
-        <p class="text-slate-400 my-2">
-          代入几何关系 <Latex latex="\tan\theta = r/h" />
-        </p>
+        <p class="text-slate-400 my-2">代入几何关系 <Latex latex="\tan\theta = r/h" /></p>
         <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
           <Latex block latex="\frac{r}{h} = \frac{\omega^2 r}{g}" />
         </div>
-        <p class="text-slate-400 my-2">
-          消去 <Latex latex="r" /> (当 <Latex latex="r \neq 0" />)
-        </p>
+        <p class="text-slate-400 my-2">消去 <Latex latex="r" /> (当 <Latex latex="r \neq 0" />)</p>
         <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
           <Latex block latex="\omega^2 = \frac{g}{h} \implies \omega = \sqrt{\frac{g}{h}}" />
         </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
+
 import { GRAVITY } from "../constants";
 import type { PendulumConfig } from "../types";
 
@@ -97,8 +98,9 @@ function render(timestamp: number): void {
   ctx.fill();
 
   const objectsToRender = props.pendulums.map((pendulum) => {
-    // oxlint-disable-next-line id-length
-    const r = Math.sqrt(Math.max(0, pendulum.length * pendulum.length - props.height * props.height));
+    const r = Math.sqrt(
+      Math.max(0, pendulum.length * pendulum.length - props.height * props.height),
+    );
     const xPhys = r * Math.cos(currentAngle);
     const zPhys = r * Math.sin(currentAngle);
     const yPhys = props.height;
@@ -110,7 +112,9 @@ function render(timestamp: number): void {
     const precomputed: { x: number; y: number }[] = [];
     for (let a = 0; a <= Math.PI * 2; a += 0.1) {
       precomputed.push({ x: a, y: a });
-      pathPoints.push(project(r * Math.cos(a), props.height, r * Math.sin(a), centerX, centerY, metersToPixels));
+      pathPoints.push(
+        project(r * Math.cos(a), props.height, r * Math.sin(a), centerX, centerY, metersToPixels),
+      );
     }
 
     return {
@@ -147,8 +151,12 @@ function render(timestamp: number): void {
     // Bob
     const bobSize = (12 + obj.config.mass * 4) * obj.pos.scale;
     const grad = ctx.createRadialGradient(
-      obj.pos.x - bobSize / 3, obj.pos.y - bobSize / 3, bobSize / 4,
-      obj.pos.x, obj.pos.y, bobSize,
+      obj.pos.x - bobSize / 3,
+      obj.pos.y - bobSize / 3,
+      bobSize / 4,
+      obj.pos.x,
+      obj.pos.y,
+      bobSize,
     );
     grad.addColorStop(0, "#fff");
     grad.addColorStop(0.5, obj.config.color);
@@ -170,9 +178,15 @@ function render(timestamp: number): void {
 
       // Draw forces using 3D line projection
       const drawArrow3D = (
-        sx: number, sy: number, sz: number,
-        dx: number, dy: number, dz: number,
-        color: string, label: string, dashed = false,
+        sx: number,
+        sy: number,
+        sz: number,
+        dx: number,
+        dy: number,
+        dz: number,
+        color: string,
+        label: string,
+        dashed = false,
       ): void => {
         const pStart = project(sx, sy, sz, centerX, centerY, metersToPixels);
         const pEnd = project(sx + dx, sy + dy, sz + dz, centerX, centerY, metersToPixels);
@@ -192,8 +206,14 @@ function render(timestamp: number): void {
         ctx.beginPath();
         ctx.fillStyle = color;
         ctx.moveTo(pEnd.x, pEnd.y);
-        ctx.lineTo(pEnd.x - headLen * Math.cos(angle - Math.PI / 6), pEnd.y - headLen * Math.sin(angle - Math.PI / 6));
-        ctx.lineTo(pEnd.x - headLen * Math.cos(angle + Math.PI / 6), pEnd.y - headLen * Math.sin(angle + Math.PI / 6));
+        ctx.lineTo(
+          pEnd.x - headLen * Math.cos(angle - Math.PI / 6),
+          pEnd.y - headLen * Math.sin(angle - Math.PI / 6),
+        );
+        ctx.lineTo(
+          pEnd.x - headLen * Math.cos(angle + Math.PI / 6),
+          pEnd.y - headLen * Math.sin(angle + Math.PI / 6),
+        );
         ctx.fill();
 
         if (label) {
@@ -207,7 +227,15 @@ function render(timestamp: number): void {
         }
       };
 
-      const drawDashed3D = (x1: number, y1: number, z1: number, x2: number, y2: number, z2: number, color: string): void => {
+      const drawDashed3D = (
+        x1: number,
+        y1: number,
+        z1: number,
+        x2: number,
+        y2: number,
+        z2: number,
+        color: string,
+      ): void => {
         const p1 = project(x1, y1, z1, centerX, centerY, metersToPixels);
         const p2 = project(x2, y2, z2, centerX, centerY, metersToPixels);
         ctx.beginPath();
@@ -226,10 +254,33 @@ function render(timestamp: number): void {
       if (distToCenter > 0.001) {
         const dirX = -obj.phys.x / distToCenter;
         const dirZ = -obj.phys.z / distToCenter;
-        drawArrow3D(obj.phys.x, obj.phys.y, obj.phys.z, dirX * FnMag, 0, dirZ * FnMag, "#eab308", "Fn", true);
-        drawArrow3D(obj.phys.x, obj.phys.y, obj.phys.z, dirX * FnMag, -vectorYMag, dirZ * FnMag, "#ef4444", "FT");
+        drawArrow3D(
+          obj.phys.x,
+          obj.phys.y,
+          obj.phys.z,
+          dirX * FnMag,
+          0,
+          dirZ * FnMag,
+          "#eab308",
+          "Fn",
+          true,
+        );
+        drawArrow3D(
+          obj.phys.x,
+          obj.phys.y,
+          obj.phys.z,
+          dirX * FnMag,
+          -vectorYMag,
+          dirZ * FnMag,
+          "#ef4444",
+          "FT",
+        );
 
-        const tipT = { x: obj.phys.x + dirX * FnMag, y: obj.phys.y - vectorYMag, z: obj.phys.z + dirZ * FnMag };
+        const tipT = {
+          x: obj.phys.x + dirX * FnMag,
+          y: obj.phys.y - vectorYMag,
+          z: obj.phys.z + dirZ * FnMag,
+        };
         const tipTy = { x: obj.phys.x, y: obj.phys.y - vectorYMag, z: obj.phys.z };
         const tipFn = { x: obj.phys.x + dirX * FnMag, y: obj.phys.y, z: obj.phys.z + dirZ * FnMag };
         drawDashed3D(tipTy.x, tipTy.y, tipTy.z, tipT.x, tipT.y, tipT.z, "#94a3b8");

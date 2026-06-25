@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Latex from "@/components/Latex.vue";
+
 import type { PendulumConfig } from "../types";
 
 interface Props {
@@ -15,10 +16,21 @@ defineProps<Props>();
 <template>
   <div class="bg-slate-900 rounded-xl p-4 border border-slate-800 shadow-lg">
     <h3 class="text-xl font-bold mb-3 text-white flex items-center gap-2">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400">
-        <line x1="18" y1="20" x2="18" y2="10"/>
-        <line x1="12" y1="20" x2="12" y2="4"/>
-        <line x1="6" y1="20" x2="6" y2="14"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="text-purple-400"
+      >
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
       </svg>
       实时数据
     </h3>
@@ -61,7 +73,7 @@ defineProps<Props>();
               {{ Math.sqrt(Math.max(0, p.length * p.length - height * height)).toFixed(2) }} m
             </td>
             <td class="px-3 py-2 font-mono text-slate-300">
-              {{ (Math.acos(Math.min(1, height / p.length)) * 180 / Math.PI).toFixed(1) }}°
+              {{ ((Math.acos(Math.min(1, height / p.length)) * 180) / Math.PI).toFixed(1) }}°
             </td>
           </tr>
         </tbody>

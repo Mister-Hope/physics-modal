@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+
 import {
   COLORS,
   GRAVITY,
@@ -198,119 +199,187 @@ function arrowEnd(bx: number, by: number, dx: number, dy: number): { x: number; 
           stroke-dasharray="4,4"
         />
         <line
-          :x1="bobX" :y1="bobY"
-          :x2="bobX + anVec.x" :y2="bobY + anVec.y"
-          :stroke="COLORS.accelRadial" stroke-width="4" stroke-dasharray="5,5"
+          :x1="bobX"
+          :y1="bobY"
+          :x2="bobX + anVec.x"
+          :y2="bobY + anVec.y"
+          :stroke="COLORS.accelRadial"
+          stroke-width="4"
+          stroke-dasharray="5,5"
           :marker-end="`url(#arrowhead-${COLORS.accelRadial.replace('#', '')})`"
         />
         <text
           :x="bobX + anVec.x + (anVec.x > 0 ? 10 : -30)"
           :y="bobY + anVec.y + (anVec.y > 0 ? 20 : -10)"
-          :fill="COLORS.accelRadial" font-size="30" font-weight="bold"
+          :fill="COLORS.accelRadial"
+          font-size="30"
+          font-weight="bold"
           style="text-shadow: 0px 0px 4px #000"
-        >an</text>
+        >
+          an
+        </text>
         <line
-          :x1="bobX" :y1="bobY"
-          :x2="bobX + atVec.x" :y2="bobY + atVec.y"
-          :stroke="COLORS.accelTangential" stroke-width="4" stroke-dasharray="5,5"
+          :x1="bobX"
+          :y1="bobY"
+          :x2="bobX + atVec.x"
+          :y2="bobY + atVec.y"
+          :stroke="COLORS.accelTangential"
+          stroke-width="4"
+          stroke-dasharray="5,5"
           :marker-end="`url(#arrowhead-${COLORS.accelTangential.replace('#', '')})`"
         />
         <text
           :x="bobX + atVec.x + (atVec.x > 0 ? 10 : -30)"
           :y="bobY + atVec.y + (atVec.y > 0 ? 20 : -10)"
-          :fill="COLORS.accelTangential" font-size="30" font-weight="bold"
+          :fill="COLORS.accelTangential"
+          font-size="30"
+          font-weight="bold"
           style="text-shadow: 0px 0px 4px #000"
-        >at</text>
+        >
+          at
+        </text>
         <line
-          :x1="bobX" :y1="bobY"
-          :x2="bobX + aTotal.x" :y2="bobY + aTotal.y"
-          :stroke="COLORS.accelTotal" stroke-width="4"
+          :x1="bobX"
+          :y1="bobY"
+          :x2="bobX + aTotal.x"
+          :y2="bobY + aTotal.y"
+          :stroke="COLORS.accelTotal"
+          stroke-width="4"
           :marker-end="`url(#arrowhead-${COLORS.accelTotal.replace('#', '')})`"
         />
         <text
           :x="bobX + aTotal.x + (aTotal.x > 0 ? 10 : -30)"
           :y="bobY + aTotal.y + (aTotal.y > 0 ? 20 : -10)"
-          :fill="COLORS.accelTotal" font-size="30" font-weight="bold"
+          :fill="COLORS.accelTotal"
+          font-size="30"
+          font-weight="bold"
           style="text-shadow: 0px 0px 4px #000"
-        >a</text>
+        >
+          a
+        </text>
       </template>
 
       <!-- Velocity Vector -->
       <template v-if="vectors.showVelocity">
         <line
-          :x1="bobX" :y1="bobY"
-          :x2="bobX + vVec.x" :y2="bobY + vVec.y"
-          :stroke="COLORS.velocity" stroke-width="4"
+          :x1="bobX"
+          :y1="bobY"
+          :x2="bobX + vVec.x"
+          :y2="bobY + vVec.y"
+          :stroke="COLORS.velocity"
+          stroke-width="4"
           :marker-end="`url(#arrowhead-${COLORS.velocity.replace('#', '')})`"
         />
         <text
           :x="bobX + vVec.x + (vVec.x > 0 ? 10 : -30)"
           :y="bobY + vVec.y + (vVec.y > 0 ? 20 : -10)"
-          :fill="COLORS.velocity" font-size="30" font-weight="bold"
+          :fill="COLORS.velocity"
+          font-size="30"
+          font-weight="bold"
           style="text-shadow: 0px 0px 4px #000"
-        >v</text>
+        >
+          v
+        </text>
       </template>
 
       <!-- Force Vectors -->
       <template v-if="vectors.showForces">
         <line
-          :x1="bobX + GnVec.x" :y1="bobY + GnVec.y"
-          :x2="bobX + gravityVec.x" :y2="bobY + gravityVec.y"
-          :stroke="COLORS.projectionLine" stroke-width="2" stroke-dasharray="4,4"
+          :x1="bobX + GnVec.x"
+          :y1="bobY + GnVec.y"
+          :x2="bobX + gravityVec.x"
+          :y2="bobY + gravityVec.y"
+          :stroke="COLORS.projectionLine"
+          stroke-width="2"
+          stroke-dasharray="4,4"
         />
         <line
-          :x1="bobX + GtVec.x" :y1="bobY + GtVec.y"
-          :x2="bobX + gravityVec.x" :y2="bobY + gravityVec.y"
-          :stroke="COLORS.projectionLine" stroke-width="2" stroke-dasharray="4,4"
+          :x1="bobX + GtVec.x"
+          :y1="bobY + GtVec.y"
+          :x2="bobX + gravityVec.x"
+          :y2="bobY + gravityVec.y"
+          :stroke="COLORS.projectionLine"
+          stroke-width="2"
+          stroke-dasharray="4,4"
         />
         <line
-          :x1="bobX" :y1="bobY"
-          :x2="bobX + GnVec.x" :y2="bobY + GnVec.y"
-          :stroke="COLORS.forceGravityComponent" stroke-width="4" stroke-dasharray="5,5"
+          :x1="bobX"
+          :y1="bobY"
+          :x2="bobX + GnVec.x"
+          :y2="bobY + GnVec.y"
+          :stroke="COLORS.forceGravityComponent"
+          stroke-width="4"
+          stroke-dasharray="5,5"
           :marker-end="`url(#arrowhead-${COLORS.forceGravityComponent.replace('#', '')})`"
         />
         <text
           :x="bobX + GnVec.x + (GnVec.x > 0 ? 10 : -30)"
           :y="bobY + GnVec.y + (GnVec.y > 0 ? 20 : -10)"
-          :fill="COLORS.forceGravityComponent" font-size="30" font-weight="bold"
+          :fill="COLORS.forceGravityComponent"
+          font-size="30"
+          font-weight="bold"
           style="text-shadow: 0px 0px 4px #000"
-        >Gn</text>
+        >
+          Gn
+        </text>
         <line
-          :x1="bobX" :y1="bobY"
-          :x2="bobX + GtVec.x" :y2="bobY + GtVec.y"
-          :stroke="COLORS.forceGravityComponent" stroke-width="4" stroke-dasharray="5,5"
+          :x1="bobX"
+          :y1="bobY"
+          :x2="bobX + GtVec.x"
+          :y2="bobY + GtVec.y"
+          :stroke="COLORS.forceGravityComponent"
+          stroke-width="4"
+          stroke-dasharray="5,5"
           :marker-end="`url(#arrowhead-${COLORS.forceGravityComponent.replace('#', '')})`"
         />
         <text
           :x="bobX + GtVec.x + (GtVec.x > 0 ? 10 : -30)"
           :y="bobY + GtVec.y + (GtVec.y > 0 ? 20 : -10)"
-          :fill="COLORS.forceGravityComponent" font-size="30" font-weight="bold"
+          :fill="COLORS.forceGravityComponent"
+          font-size="30"
+          font-weight="bold"
           style="text-shadow: 0px 0px 4px #000"
-        >Gt</text>
+        >
+          Gt
+        </text>
         <line
-          :x1="bobX" :y1="bobY"
-          :x2="bobX + gravityVec.x" :y2="bobY + gravityVec.y"
-          :stroke="COLORS.forceGravity" stroke-width="4"
+          :x1="bobX"
+          :y1="bobY"
+          :x2="bobX + gravityVec.x"
+          :y2="bobY + gravityVec.y"
+          :stroke="COLORS.forceGravity"
+          stroke-width="4"
           :marker-end="`url(#arrowhead-${COLORS.forceGravity.replace('#', '')})`"
         />
         <text
           :x="bobX + gravityVec.x + (gravityVec.x > 0 ? 10 : -30)"
           :y="bobY + gravityVec.y + (gravityVec.y > 0 ? 20 : -10)"
-          :fill="COLORS.forceGravity" font-size="30" font-weight="bold"
+          :fill="COLORS.forceGravity"
+          font-size="30"
+          font-weight="bold"
           style="text-shadow: 0px 0px 4px #000"
-        >G</text>
+        >
+          G
+        </text>
         <line
-          :x1="bobX" :y1="bobY"
-          :x2="bobX + tensionVec.x" :y2="bobY + tensionVec.y"
-          :stroke="COLORS.forceTension" stroke-width="4"
+          :x1="bobX"
+          :y1="bobY"
+          :x2="bobX + tensionVec.x"
+          :y2="bobY + tensionVec.y"
+          :stroke="COLORS.forceTension"
+          stroke-width="4"
           :marker-end="`url(#arrowhead-${COLORS.forceTension.replace('#', '')})`"
         />
         <text
           :x="bobX + tensionVec.x + (tensionVec.x > 0 ? 10 : -30)"
           :y="bobY + tensionVec.y + (tensionVec.y > 0 ? 20 : -10)"
-          :fill="COLORS.forceTension" font-size="30" font-weight="bold"
+          :fill="COLORS.forceTension"
+          font-size="30"
+          font-weight="bold"
           style="text-shadow: 0px 0px 4px #000"
-        >T</text>
+        >
+          T
+        </text>
       </template>
     </svg>
   </div>

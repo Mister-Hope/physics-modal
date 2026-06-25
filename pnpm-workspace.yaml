@@ -1,1 +1,6 @@
+configDependencies:
+  pacquet: ^0.11.11
+
 enableGlobalVirtualStore: true
+
+trustPolicy: no-downgrade

@@ -10,6 +10,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   latex: "",
   block: false,
+  color: "",
 });
 
 const content = computed(() => props.latex);
@@ -39,14 +40,16 @@ const renderMath = async (): Promise<void> => {
 
     el.style.visibility = "visible";
 
+    const { color } = props;
+
     if (props.color) {
       const svg = el.querySelector("svg");
       if (svg) {
-        svg.style.fill = props.color;
-        svg.style.color = props.color;
+        svg.style.fill = color;
+        svg.style.color = color;
         const paths = svg.querySelectorAll("path, rect, polygon");
         paths.forEach((path) => {
-          (path as SVGElement).style.fill = props.color!;
+          (path as SVGElement).style.fill = color;
         });
       }
     }
@@ -54,18 +57,18 @@ const renderMath = async (): Promise<void> => {
     el.textContent = content.value;
     el.style.visibility = "visible";
   }
-}
+};
 
 onMounted(() => {
   isMounted = true;
-  void renderMath();
-});
 
-watch(() => props.latex, () => {
-  void renderMath();
-});
+  watch(
+    () => [props.color, props.latex],
+    () => {
+      void renderMath();
+    },
+  );
 
-watch(() => props.color, () => {
   void renderMath();
 });
 

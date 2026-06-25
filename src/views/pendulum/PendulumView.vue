@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
 import Copyright from "@/components/Copyright.vue";
 import NavBar from "@/components/NavBar.vue";
+
 import ControlPanel from "./components/ControlPanel.vue";
 import DataDisplay from "./components/DataDisplay.vue";
 import Visualizer from "./components/Visualizer.vue";
@@ -38,18 +39,9 @@ const vectors = ref<VectorConfig>({ ...INITIAL_VECTORS });
 let requestRef: number | null = null;
 let lastTimeRef: number | null = null;
 let accumulatorRef = 0;
-const stateRef = ref<SimulationState>({ ...INITIAL_STATE }).value;
+const stateRef = reactive<SimulationState>({ ...INITIAL_STATE });
 
-// Keep stateRef in sync
-const syncStateRef = computed(() => {
-  stateRef.theta = state.value.theta;
-  stateRef.omega = state.value.omega;
-  stateRef.alpha = state.value.alpha;
-  stateRef.time = state.value.time;
-  return stateRef;
-});
-
-function initializeState(): void {
+const initializeState = (): void => {
   const startState: SimulationState = {
     theta: params.value.initialAngle * (Math.PI / 180),
     omega: 0,
@@ -57,13 +49,9 @@ function initializeState(): void {
     time: 0,
   };
   state.value = { ...startState };
-  stateRef.theta = startState.theta;
-  stateRef.omega = startState.omega;
-  stateRef.alpha = startState.alpha;
-  stateRef.time = startState.time;
   accumulatorRef = 0;
   lastTimeRef = null;
-}
+};
 
 // Re-initialize when initial angle changes
 const updateParams = (newParams: PhysicsParams): void => {
@@ -80,10 +68,7 @@ function updatePhysics(
   const { theta, omega } = currentState;
   const { gravity, length } = currentParams;
 
-  const evaluateDerivatives = (
-    th: number,
-    om: number,
-  ): { dTheta: number; dOmega: number } => ({
+  const evaluateDerivatives = (th: number, om: number): { dTheta: number; dOmega: number } => ({
     dTheta: om,
     dOmega: -(gravity / length) * Math.sin(th),
   });
@@ -160,6 +145,14 @@ function handleReset(): void {
   mode.value = SimulationMode.Paused;
 }
 
+// Keep stateRef in sync with state (used for external resets)
+watch(state, (newState) => {
+  stateRef.theta = newState.theta;
+  stateRef.omega = newState.omega;
+  stateRef.alpha = newState.alpha;
+  stateRef.time = newState.time;
+});
+
 onMounted(() => {
   requestRef = requestAnimationFrame(animate);
 });
@@ -170,7 +163,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen w-screen overflow-hidden text-slate-100 font-sans bg-slate-900">
+  <div
+    class="flex flex-col h-screen w-screen overflow-hidden text-slate-100 font-sans bg-slate-900"
+  >
     <NavBar title="单摆演示教学系统" :gradient="true" />
 
     <div class="flex-1 flex overflow-hidden relative">
@@ -184,9 +179,9 @@ onBeforeUnmount(() => {
         @reset="handleReset"
       />
 
-      <Visualizer :state="syncStateRef" :params="params" :vectors="vectors" />
+      <Visualizer :state="stateRef" :params="params" :vectors="vectors" />
 
-      <DataDisplay :state="syncStateRef" :params="params" />
+      <DataDisplay :state="stateRef" :params="params" />
 
       <Copyright />
     </div>

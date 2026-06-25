@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DataRow from "@/components/DataRow.vue";
 import Latex from "@/components/Latex.vue";
+
 import { COLORS, GRAVITY } from "../constants";
 import type { PhysicsParams, SimulationState } from "../types";
 
@@ -31,7 +32,9 @@ function calculateExactPeriod(length: number, gravity: number, maxAngleDeg: numb
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-5 bg-slate-800 border-l border-slate-700 shadow-xl w-[380px] overflow-y-auto">
+  <div
+    class="h-full flex flex-col p-5 bg-slate-800 border-l border-slate-700 shadow-xl w-[380px] overflow-y-auto"
+  >
     <div class="pb-2 mb-2">
       <h2 class="text-2xl font-bold text-white">实时数据</h2>
     </div>
@@ -40,7 +43,7 @@ function calculateExactPeriod(length: number, gravity: number, maxAngleDeg: numb
       <DataRow
         title="摆角"
         symbol="\theta"
-        :value="Math.abs(state.theta * 180 / Math.PI)"
+        :value="Math.abs((state.theta * 180) / Math.PI)"
         unit="°"
         color-class="text-slate-200"
         :digits="1"
@@ -66,7 +69,10 @@ function calculateExactPeriod(length: number, gravity: number, maxAngleDeg: numb
       <DataRow
         title="绳拉力"
         symbol="F_{\text{T}}"
-        :value="params.mass * (GRAVITY * Math.cos(state.theta) + params.length * state.omega * state.omega)"
+        :value="
+          params.mass *
+          (GRAVITY * Math.cos(state.theta) + params.length * state.omega * state.omega)
+        "
         unit="N"
         color-class="text-pink-400"
         :hex-color="COLORS.forceTension"
@@ -84,7 +90,12 @@ function calculateExactPeriod(length: number, gravity: number, maxAngleDeg: numb
       <DataRow
         title="合加速度"
         symbol="a"
-        :value="Math.hypot(Math.abs(GRAVITY * Math.sin(state.theta)), params.length * state.omega * state.omega)"
+        :value="
+          Math.hypot(
+            Math.abs(GRAVITY * Math.sin(state.theta)),
+            params.length * state.omega * state.omega,
+          )
+        "
         unit="m/s²"
         color-class="text-amber-400"
         :hex-color="COLORS.accelTotal"

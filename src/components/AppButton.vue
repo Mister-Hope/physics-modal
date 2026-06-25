@@ -18,18 +18,12 @@ const emit = defineEmits<{
 }>();
 
 const variantClasses: Record<string, string> = {
-  primary:
-    "bg-blue-600 hover:bg-blue-500 text-white border-blue-500",
-  secondary:
-    "bg-slate-700 hover:bg-slate-600 text-slate-200 border-transparent",
-  success:
-    "bg-green-600 hover:bg-green-500 text-white border-green-500",
-  warning:
-    "bg-amber-600 hover:bg-amber-500 text-white border-amber-500",
-  danger:
-    "bg-red-600 hover:bg-red-500 text-white border-red-500",
-  ghost:
-    "bg-transparent hover:bg-slate-700/50 text-slate-300 border-slate-600",
+  primary: "bg-blue-600 hover:bg-blue-500 text-white border-blue-500",
+  secondary: "bg-slate-700 hover:bg-slate-600 text-slate-200 border-transparent",
+  success: "bg-green-600 hover:bg-green-500 text-white border-green-500",
+  warning: "bg-amber-600 hover:bg-amber-500 text-white border-amber-500",
+  danger: "bg-red-600 hover:bg-red-500 text-white border-red-500",
+  ghost: "bg-transparent hover:bg-slate-700/50 text-slate-300 border-slate-600",
 };
 
 const sizeClasses: Record<string, string> = {

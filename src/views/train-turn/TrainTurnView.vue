@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+
 import Copyright from "@/components/Copyright.vue";
 import NavBar from "@/components/NavBar.vue";
+
 import ControlPanel from "./components/ControlPanel.vue";
 import SimulationCanvas from "./components/SimulationCanvas.vue";
 import StatusCard from "./components/StatusCard.vue";

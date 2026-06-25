@@ -13,11 +13,9 @@ export function calculatePhysics(
   const idealVelocity = Math.sqrt(G * radius * Math.tan(angleRad));
   const centripetalAccel = (velocity * velocity) / radius;
 
-  const normalForce =
-    TRAIN_MASS * (G * Math.cos(angleRad) + centripetalAccel * Math.sin(angleRad));
+  const normalForce = TRAIN_MASS * (G * Math.cos(angleRad) + centripetalAccel * Math.sin(angleRad));
 
-  const flangeForce =
-    TRAIN_MASS * (centripetalAccel * Math.cos(angleRad) - G * Math.sin(angleRad));
+  const flangeForce = TRAIN_MASS * (centripetalAccel * Math.cos(angleRad) - G * Math.sin(angleRad));
 
   const gravity = TRAIN_MASS * G;
   const netForce = TRAIN_MASS * centripetalAccel;

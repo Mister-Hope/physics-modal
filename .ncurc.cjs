@@ -1,6 +1,7 @@
 module.exports = {
-  upgrade: true,
+  cooldown: 1,
   timeout: 360000,
+  upgrade: true,
   target: (name) => {
     if (name === "@types/node") return "minor";
 

@@ -181,6 +181,5 @@ const legendItems = [
         </div>
       </div>
     </div>
-
   </div>
 </template>
