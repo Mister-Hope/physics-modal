@@ -74,10 +74,10 @@ const YY_PLATE_START = 70;
 const SCREEN_X = 430;
 const PLATE_GAP = 24;
 const PLATE_WIDTH = 40;
-const XX_DEFLECTION_SENSITIVITY = 0.12;
-const YY_DEFLECTION_SENSITIVITY = 0.075;
+const XX_DEFLECTION_SENSITIVITY = 0.163934;
+const YY_DEFLECTION_SENSITIVITY = 0.101215;
 const INITIAL_VELOCITY_X = 6;
-const SPAWN_INTERVAL = 4;
+const SPAWN_INTERVAL = 1;
 const TRAIL_LENGTH = 24;
 const SCAN_PERIOD = 180;
 const SIGNAL_PERIOD = 180;
@@ -109,162 +109,64 @@ interface EState {
   trail: { x: number; y: number; z: number }[];
   alive: boolean;
 }
+
 interface Impact {
   y: number;
   z: number;
   age: number;
 }
-interface Scenario {
-  name: string;
-  sub: string;
-  desc: string;
-  voltageY: (phase: number) => number;
-  voltageX: (phase: number) => number;
-  vyI: string;
-  vxI: string;
-  isCustom?: boolean;
-}
 
 // ============================================================
-// Physics state
+// Physics state (Adjustable parameters)
 // ============================================================
-const customParams = { yMode: 0, xMode: 0, yAmp: 0.8, xAmp: 0.8 };
-const customizeVy = (phase: number): number => {
-  if (customParams.yMode === 1) return customParams.yAmp;
-  if (customParams.yMode === 2)
-    return Math.abs(customParams.yAmp) * Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD);
-  if (customParams.yMode === 3)
-    return Math.abs(customParams.yAmp) * (2 * ((phase % SCAN_PERIOD) / SCAN_PERIOD) - 1);
-  return 0;
-};
-const customizeVx = (phase: number): number => {
-  if (customParams.xMode === 1) return customParams.xAmp;
-  if (customParams.xMode === 2)
-    return Math.abs(customParams.xAmp) * Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD);
-  if (customParams.xMode === 3)
-    return Math.abs(customParams.xAmp) * (2 * ((phase % SCAN_PERIOD) / SCAN_PERIOD) - 1);
-  return 0;
-};
+const persistence = ref(90);
+const persistenceVal = ref("90帧");
+const isPaused = ref(false);
 
-const scenarios: Scenario[] = [
-  {
-    name: "零电压",
-    sub: "基准状态",
-    desc: "XX'、YY' 均不加电压。电子沿直线运动打在荧光屏正中心，呈现一个亮斑。",
-    voltageY: () => 0,
-    voltageX: () => 0,
-    vyI: "0（不加电压）",
-    vxI: "0（不加电压）",
-  },
-  {
-    name: "Y 正偏",
-    sub: "恒定偏转",
-    desc: "XX'不加电压，YY'加恒定正压。电子向Y板上方偏转，亮斑在Y轴上方。",
-    voltageY: () => 1,
-    voltageX: () => 0,
-    vyI: "Y>Y'（恒定正压）",
-    vxI: "0（不加电压）",
-  },
-  {
-    name: "Y 负偏",
-    sub: "恒定偏转",
-    desc: "XX'不加电压，YY'加恒定负压。电子向Y'板下方偏转。",
-    voltageY: () => -1,
-    voltageX: () => 0,
-    vyI: "Y'>Y（恒定反压）",
-    vxI: "0",
-  },
-  {
-    name: "Y 交变",
-    sub: "交变电压",
-    desc: "XX'不加电压，YY'加正弦电压。竖直亮线。",
-    voltageY: (phase) => Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD),
-    voltageX: () => 0,
-    vyI: "正弦交变",
-    vxI: "0",
-  },
-  {
-    name: "X 正偏",
-    sub: "恒定偏转",
-    desc: "YY'不加电压，XX'加恒定正压。电子向X板右侧偏转。",
-    voltageY: () => 0,
-    voltageX: () => 1,
-    vyI: "0",
-    vxI: "X>X'",
-  },
-  {
-    name: "X 负偏",
-    sub: "恒定偏转",
-    desc: "YY'不加电压，XX'加恒定负压。电子向X'板左侧偏转。",
-    voltageY: () => 0,
-    voltageX: () => -1,
-    vyI: "0",
-    vxI: "X'>X",
-  },
-  {
-    name: "X 扫描",
-    sub: "锯齿波",
-    desc: "YY'不加电压，XX'加锯齿波。水平亮线。",
-    voltageY: () => 0,
-    voltageX: (phase) => 2 * ((phase % SCAN_PERIOD) / SCAN_PERIOD) - 1,
-    vyI: "0",
-    vxI: "锯齿波",
-  },
-  {
-    name: "标准波形",
-    sub: "波形成像",
-    desc: "YY'正弦信号，XX'同周期锯齿波。显示正弦波形。",
-    voltageY: (phase) => Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD),
-    voltageX: (phase) => 2 * ((phase % SCAN_PERIOD) / SCAN_PERIOD) - 1,
-    vyI: "正弦",
-    vxI: "同周期锯齿波",
-  },
-  {
-    name: "双向偏转",
-    sub: "恒定偏转",
-    desc: "XX'和YY'均加恒定正压。亮斑在第一象限。",
-    voltageY: () => 1,
-    voltageX: () => 1,
-    vyI: "Y>Y'",
-    vxI: "X>X'",
-  },
-  {
-    name: "X偏+Y交变",
-    sub: "组合偏转",
-    desc: "XX'恒定正压，YY'正弦电压。右侧竖直亮线。",
-    voltageY: (phase) => Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD),
-    voltageX: () => 1,
-    vyI: "正弦",
-    vxI: "X>X'",
-  },
-  {
-    name: "双周期扫描",
-    sub: "完整波形",
-    desc: "YY'正弦，XX'半周期锯齿波。完整正弦波。",
-    voltageY: (phase) => Math.sin((2 * Math.PI * phase) / SIGNAL_PERIOD),
-    voltageX: (phase) => 2 * ((phase % (SCAN_PERIOD / 2)) / (SCAN_PERIOD / 2)) - 1,
-    vyI: "正弦",
-    vxI: "半周期锯齿波",
-  },
-  {
-    name: "自定义",
-    sub: "自由探索",
-    desc: "手动调节电压类型、幅度和频率。恒定模式幅度可正可负。",
-    voltageY: (phase) => customizeVy(phase),
-    voltageX: (phase) => customizeVx(phase),
-    vyI: "自定义",
-    vxI: "自定义",
-    isCustom: true,
-  },
+const cYMode = ref(0); // 0: 固定, 1: 正弦, 2: 锯齿, 3: 方波
+const cYAmp = ref(0.0); // 默认0V (固定) 打到中心
+const cYPeriodMult = ref<number>(1);
+
+const cXMode = ref(0); // 0: 固定, 1: 锯齿, 2: 正弦, 3: 方波
+const cXAmp = ref(0.0); // 默认0V (固定) 打到中心
+const cXPeriodMult = ref<number>(1);
+
+const periodOptions = [
+  { label: "1/3", value: 1 / 3 },
+  { label: "1/2", value: 0.5 },
+  { label: "1x", value: 1 },
+  { label: "2x", value: 2 },
+  { label: "3x", value: 3 },
 ];
 
-let curSc = 0,
+const getVoltageY = (phase: number): number => {
+  const T = SIGNAL_PERIOD * cYPeriodMult.value;
+  if (cYMode.value === 0) return cYAmp.value;
+  if (cYMode.value === 1) return cYAmp.value * Math.sin((2 * Math.PI * phase) / T);
+  if (cYMode.value === 2) return cYAmp.value * (2 * ((phase % T) / T) - 1);
+  if (cYMode.value === 3) return cYAmp.value * (Math.sin((2 * Math.PI * phase) / T) >= 0 ? 1 : -1);
+  return 0;
+};
+
+const getVoltageX = (phase: number): number => {
+  const T = SIGNAL_PERIOD * cXPeriodMult.value;
+  if (cXMode.value === 0) return cXAmp.value;
+  if (cXMode.value === 1) return cXAmp.value * (2 * ((phase % T) / T) - 1);
+  if (cXMode.value === 2) return cXAmp.value * Math.sin((2 * Math.PI * phase) / T);
+  if (cXMode.value === 3) return cXAmp.value * (Math.sin((2 * Math.PI * phase) / T) >= 0 ? 1 : -1);
+  return 0;
+};
+
+let curSc = 11,
   gPhase = 0,
   spawnT = 0;
 let electrons: EState[] = [],
   impacts: Impact[] = [];
-let persistence = 90;
-let isPaused = false;
+
+const clearBeam = () => {
+  electrons = [];
+  impacts = [];
+};
 
 // ============================================================
 // Build 3D tube geometry
@@ -455,7 +357,7 @@ const updateScreenTexture = (): void => {
   const scaleX = screenW / 200;
   const scaleY = screenH / 200;
   for (const imp of impacts) {
-    const alpha = Math.max(0, 1 - imp.age / persistence);
+    const alpha = Math.max(0, 1 - imp.age / persistence.value);
     const pixelX = w / 2 + imp.z * scaleX;
     const pixelY = h / 2 - imp.y * scaleY;
     const radius = 4 + (1 - alpha) * 5;
@@ -566,13 +468,12 @@ const updatePlateColor = (material: MeshPhongMaterial, polarity: number): void =
 
 const updatePlateColors = (): void => {
   if (!THREE) return;
-  const scenario = scenarios[curSc];
-  const voltageY = scenario.voltageY(gPhase);
-  const voltageX = scenario.voltageX(gPhase);
-  updatePlateColor(plateYY_top.material, voltageY);
-  updatePlateColor(plateYY_bot.material, -voltageY);
-  updatePlateColor(plateXX_left.material, voltageX);
-  updatePlateColor(plateXX_right.material, -voltageX);
+  const voltageY = getVoltageY(gPhase);
+  const voltageX = getVoltageX(gPhase);
+  if (plateYY_top) updatePlateColor(plateYY_top.material as MeshPhongMaterial, voltageY);
+  if (plateYY_bot) updatePlateColor(plateYY_bot.material as MeshPhongMaterial, -voltageY);
+  if (plateXX_left) updatePlateColor(plateXX_left.material as MeshPhongMaterial, voltageX);
+  if (plateXX_right) updatePlateColor(plateXX_right.material as MeshPhongMaterial, -voltageX);
 };
 
 // ============================================================
@@ -626,14 +527,14 @@ const initBeamMaterials = (): void => {
     opacity: 0.85,
     depthTest: false,
   });
-  beamGlowSphereGeom = new THREE.SphereGeometry(5, 8, 8);
+  beamGlowSphereGeom = new THREE.SphereGeometry(5 / 3, 8, 8);
   beamGlowSphereMat = new THREE.MeshBasicMaterial({
     color: 0x30ff40,
     transparent: true,
     opacity: 0.25,
     depthTest: false,
   });
-  beamCoreSphereGeom = new THREE.SphereGeometry(2, 8, 8);
+  beamCoreSphereGeom = new THREE.SphereGeometry(2 / 3, 8, 8);
   beamCoreSphereMat = new THREE.MeshBasicMaterial({
     color: 0xb0ffb0,
     transparent: true,
@@ -679,11 +580,6 @@ const updateBeamGroup = (): void => {
     const coreGeom = new THREE.BufferGeometry().setFromPoints(points);
     beamGroup.add(new THREE.Line(coreGeom, beamCoreMat));
 
-    // Electron head glow
-    const glowSphere = new THREE.Mesh(beamGlowSphereGeom, beamGlowSphereMat);
-    glowSphere.position.set(e.x, e.y, e.z);
-    beamGroup.add(glowSphere);
-
     // Electron core
     const sphere = new THREE.Mesh(beamCoreSphereGeom, beamCoreSphereMat);
     sphere.position.set(e.x, e.y, e.z);
@@ -700,7 +596,9 @@ const buildLabels = (): Group | null => {
 
   const addLabel = (
     text: string,
-    position: { labelX: number; labelY: number; labelZ: number },
+    labelX: number,
+    labelY: number,
+    labelZ: number,
     labelColor: string,
   ): void => {
     const canvas = document.createElement("canvas");
@@ -717,7 +615,7 @@ const buildLabels = (): Group | null => {
     tex.minFilter = THREE.LinearFilter;
     const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.position.set(position.labelX, position.labelY, position.labelZ);
+    sprite.position.set(labelX, labelY, labelZ);
     sprite.scale.set(24, 12, 1);
     group.add(sprite);
   };
@@ -736,7 +634,7 @@ const buildLabels = (): Group | null => {
 // ============================================================
 // Physics simulation
 // ============================================================
-const spawnElectron = (): void => {
+const spawnElectron = (offsetSubFrame = 0): void => {
   electrons.push({
     x: ELECTRON_GUN_X,
     y: 0,
@@ -744,7 +642,7 @@ const spawnElectron = (): void => {
     vx: INITIAL_VELOCITY_X,
     vy: 0,
     vz: 0,
-    birthPhase: gPhase,
+    birthPhase: gPhase + offsetSubFrame,
     sVy: null,
     sVx: 0,
     trail: [],
@@ -756,8 +654,8 @@ const updateElectrons = (): void => {
   for (const e of electrons) {
     if (!e.alive) continue;
     if (e.sVy == null) {
-      e.sVy = scenarios[curSc].voltageY(e.birthPhase);
-      e.sVx = scenarios[curSc].voltageX(e.birthPhase);
+      e.sVy = getVoltageY(e.birthPhase);
+      e.sVx = getVoltageX(e.birthPhase);
     }
     e.trail.push({ x: e.x, y: e.y, z: e.z });
     if (e.trail.length > TRAIL_LENGTH) e.trail.shift();
@@ -774,7 +672,7 @@ const updateElectrons = (): void => {
   }
   electrons = electrons.filter((electron) => electron.alive);
   for (const imp of impacts) imp.age += 1;
-  impacts = impacts.filter((imp) => imp.age < persistence);
+  impacts = impacts.filter((imp) => imp.age < persistence.value);
 };
 
 // ============================================================
@@ -822,7 +720,7 @@ const drawScreenInset = (): void => {
   const scaleX = screenW / 200;
   const scaleY = screenH / 200;
   for (const imp of impacts) {
-    const alpha = Math.max(0, 1 - imp.age / persistence);
+    const alpha = Math.max(0, 1 - imp.age / persistence.value);
     const pixelX = centerX - imp.z * scaleX;
     const pixelY = centerY - imp.y * scaleY;
     const radius = 4 + (1 - alpha) * 5;
@@ -922,7 +820,7 @@ const initScene = async (): Promise<void> => {
     1,
     2000,
   );
-  camera.position.set(-200, 80, 320);
+  camera.position.set(640, 80, -320);
   camera.lookAt(220, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -989,10 +887,12 @@ const initScene = async (): Promise<void> => {
 useRafFn(() => {
   if (!THREE || !renderer || !scene || !camera) return;
 
-  if (!isPaused) {
+  if (!isPaused.value) {
     spawnT += 1;
     if (spawnT >= SPAWN_INTERVAL) {
-      spawnElectron();
+      spawnElectron(0);
+      spawnElectron(0.33);
+      spawnElectron(0.66);
       spawnT = 0;
     }
     updateElectrons();
@@ -1004,9 +904,8 @@ useRafFn(() => {
   updateScreenTexture();
   drawScreenInset();
 
-  const scenario = scenarios[curSc];
-  drawUtChart(utYYRef.value, scenario.voltageY, "#ff8a80", gPhase);
-  drawUtChart(utXXRef.value, scenario.voltageX, "#82b1ff", gPhase);
+  drawUtChart(utYYRef.value, getVoltageY, "#ff8a80", gPhase);
+  drawUtChart(utXXRef.value, getVoltageX, "#82b1ff", gPhase);
 
   if (orbit) orbit.update();
   renderer.render(scene, camera);
@@ -1020,76 +919,29 @@ const onResize = (): void => {
 };
 useEventListener(globalThis, "resize", onResize);
 
-// ============================================================
-// Reactive state
-// ============================================================
-const scenarioName = ref(scenarios[0].name);
-const scenarioSub = ref(scenarios[0].sub);
-const scenarioDesc = ref(scenarios[0].desc);
-const showCustomControls = ref(false);
-const showVoltageDisplay = ref(true);
-const vyLabel = ref(scenarios[0].vyI);
-const vxLabel = ref(scenarios[0].vxI);
-const persistenceVal = ref("90帧");
-const cYAmp = ref(0.8);
-const cYAmpValDisplay = ref("0.8");
-const cYMode = ref(0);
-const cXAmp = ref(0.8);
-const cXAmpValDisplay = ref("0.8");
-const cXMode = ref(0);
-
-const setScenario = (index: number): void => {
-  curSc = index;
-  electrons = [];
-  impacts = [];
-  gPhase = 0;
-  const scenario = scenarios[index];
-  scenarioName.value = scenario.name;
-  scenarioSub.value = scenario.sub;
-  scenarioDesc.value = scenario.desc;
-  if (scenario.isCustom) {
-    showVoltageDisplay.value = false;
-    showCustomControls.value = true;
-  } else {
-    showVoltageDisplay.value = true;
-    showCustomControls.value = false;
-    vyLabel.value = scenario.vyI;
-    vxLabel.value = scenario.vxI;
-  }
-};
-const updatePersistence = (val: number): void => {
-  persistence = val;
-  persistenceVal.value = `${val}帧`;
-};
-const updateCustomParams = (): void => {
-  customParams.yMode = cYMode.value;
-  customParams.xMode = cXMode.value;
-  customParams.yAmp = cYAmp.value;
-  customParams.xAmp = cXAmp.value;
-  cYAmpValDisplay.value = cYAmp.value.toFixed(1);
-  cXAmpValDisplay.value = cXAmp.value.toFixed(1);
-  electrons = [];
-  impacts = [];
-};
 const resetView = (): void => {
+  if (!orbit || !camera) return;
   orbit.target.set(220, 0, 0);
-  camera.position.set(-200, 80, 320);
+  camera.position.set(640, 80, -320);
   camera.lookAt(220, 0, 0);
   orbit.update();
 };
 const viewFront = (): void => {
+  if (!orbit || !camera) return;
   orbit.target.set(220, 0, 0);
-  camera.position.set(220, 0, 500);
+  camera.position.set(750, 0, 0);
   camera.lookAt(220, 0, 0);
   orbit.update();
 };
 const viewSide = (): void => {
+  if (!orbit || !camera) return;
   orbit.target.set(220, 0, 0);
-  camera.position.set(220, 500, 0);
+  camera.position.set(640, 80, -320);
   camera.lookAt(220, 0, 0);
   orbit.update();
 };
 const viewTop = (): void => {
+  if (!orbit || !camera) return;
   orbit.target.set(220, 0, 0);
   camera.position.set(220, 500, 1);
   camera.lookAt(220, 0, 0);
@@ -1099,15 +951,9 @@ const viewTop = (): void => {
 // ============================================================
 // Keyboard
 // ============================================================
-onKeyStroke(["ArrowRight", "ArrowDown"], () => {
-  setScenario((curSc + 1) % 12);
-});
-onKeyStroke(["ArrowLeft", "ArrowUp"], () => {
-  setScenario((curSc - 1 + 12) % 12);
-});
 onKeyStroke(" ", (event) => {
   event.preventDefault();
-  isPaused = !isPaused;
+  isPaused.value = !isPaused.value;
 });
 
 // ============================================================
@@ -1119,7 +965,6 @@ onMounted(async () => {
     screenInsetRef.value.width = 460;
     screenInsetRef.value.height = 460;
   }
-  setScenario(0);
   await initScene();
 });
 
@@ -1138,129 +983,194 @@ onBeforeUnmount(() => {
   <div class="h-screen flex flex-col bg-[#0b111a] text-[#d0dce8] overflow-hidden select-none">
     <NavBar title="示波管工作原理" :gradient="true" />
 
-    <nav
-      class="px-5 py-2 flex flex-wrap gap-1.5 bg-[#0c121c]/95 border-b border-blue-900/10 shrink-0 z-10"
-    >
-      <button
-        v-for="(s, i) in scenarios"
-        :key="i"
-        :class="[
-          'px-3.5 py-2 rounded-2xl text-sm cursor-pointer transition-all whitespace-nowrap border',
-          curSc === i
-            ? s.isCustom
-              ? 'bg-gradient-to-br from-amber-600 to-amber-700 border-amber-500 text-white font-semibold shadow-[0_0_12px_rgba(245,158,11,0.35)]'
-              : 'bg-gradient-to-br from-blue-600 to-blue-700 border-blue-500 text-white font-semibold shadow-[0_0_12px_rgba(37,99,235,0.35)]'
-            : s.isCustom
-              ? 'bg-blue-950/75 border-amber-500/35 text-amber-400 hover:bg-blue-900/80 hover:text-white hover:border-amber-500/50'
-              : 'bg-blue-950/75 border-blue-400/20 text-slate-400 hover:bg-blue-900/80 hover:text-white hover:border-blue-400/35',
-        ]"
-        @click="setScenario(i)"
-      >
-        {{ i + 1 }}. {{ s.name }}
-      </button>
-    </nav>
-
     <main class="flex-1 flex gap-3 px-5 py-3 min-h-0">
       <!-- 3D view with floating overlays -->
       <div
         ref="containerRef"
         class="flex-1 relative bg-[#0a0f19]/60 rounded-xl border border-blue-400/15 overflow-hidden min-w-0"
       >
-        <!-- Info overlay: top-left -->
-        <div class="absolute top-3 left-3 z-20 max-w-[55%] pointer-events-none">
-          <div class="text-amber-400 text-xl font-bold leading-tight">{{ scenarioName }}</div>
-          <div class="text-slate-400 text-sm mt-0.5">{{ scenarioSub }}</div>
-          <div class="text-slate-400 text-sm mt-1 leading-snug max-w-md">{{ scenarioDesc }}</div>
+        <!-- Persistence overlay: top-left (Moved from bottom-left) -->
+        <div
+          class="absolute top-3 left-3 z-20 bg-[#0c121c]/92 border border-blue-400/20 rounded-xl p-3.5 backdrop-blur-md w-72 shadow-2xl flex flex-col gap-2 select-text"
+        >
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-emerald-400 font-bold flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              荧光屏余晖
+            </span>
+            <span class="text-emerald-400 font-mono text-right">{{ persistence }}帧</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <input
+              type="range"
+              min="20"
+              max="1000"
+              step="10"
+              v-model.number="persistence"
+              class="flex-1 h-1 appearance-none bg-emerald-400/10 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-400 [&::-webkit-slider-thumb]:cursor-pointer"
+            />
+          </div>
         </div>
 
         <!-- Controls overlay: bottom-left -->
         <div
-          class="absolute bottom-3 left-3 z-20 bg-[#0c121c]/92 border border-blue-400/20 rounded-xl p-4 backdrop-blur-md min-w-72"
+          class="absolute bottom-3 left-3 z-20 bg-[#0c121c]/92 border border-blue-400/20 rounded-xl p-4 backdrop-blur-md w-[38rem] max-w-[calc(100%-1.5rem)] shadow-2xl select-text"
         >
-          <div v-if="showVoltageDisplay" class="flex flex-col gap-2 mb-3">
-            <div class="flex items-center gap-3 text-sm">
-              <span class="text-slate-400 font-semibold w-14 shrink-0">YY' 电极</span>
-              <span
-                class="font-semibold font-mono bg-blue-400/10 px-3 py-1 rounded border text-red-300 border-red-300/30"
-                >{{ vyLabel }}</span
-              >
-            </div>
-            <div class="flex items-center gap-3 text-sm">
-              <span class="text-slate-400 font-semibold w-14 shrink-0">XX' 电极</span>
-              <span
-                class="font-semibold font-mono bg-blue-400/10 px-3 py-1 rounded border text-blue-300 border-blue-300/30"
-                >{{ vxLabel }}</span
-              >
-            </div>
-          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <!-- X-axis settings (先X后Y) -->
+            <div class="flex flex-col gap-2.5 pr-4 border-r border-blue-400/10">
+              <div class="flex items-center justify-between">
+                <span class="text-blue-400 font-bold text-xs flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                  X轴信号 (水平偏转 XX')
+                </span>
+              </div>
 
-          <div class="flex items-center gap-3 text-sm">
-            <span class="text-slate-400 font-semibold w-14 shrink-0">余晖</span>
-            <input
-              type="range"
-              min="20"
-              max="300"
-              :value="persistence"
-              step="10"
-              class="flex-1 h-1.5 appearance-none bg-blue-400/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#4a90d9] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
-              @input="updatePersistence(Number(($event.target as HTMLInputElement).value))"
-            />
-            <span class="text-amber-400 text-sm min-w-12 text-right font-mono">{{
-              persistenceVal
-            }}</span>
-          </div>
+              <!-- X Mode Select -->
+              <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">波形选择:</span>
+                <div
+                  class="flex-1 grid grid-cols-4 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
+                >
+                  <button
+                    v-for="(name, idx) in ['固定', '锯齿', '正弦', '方波']"
+                    :key="idx"
+                    type="button"
+                    :class="[
+                      'py-1 text-center rounded transition-all text-[11px] cursor-pointer whitespace-nowrap',
+                      cXMode === idx
+                        ? 'bg-blue-500/25 text-blue-200 border border-blue-500/30 font-semibold'
+                        : 'text-slate-400 hover:text-slate-200',
+                    ]"
+                    @click="cXMode = idx"
+                  >
+                    {{ name }}
+                  </button>
+                </div>
+              </div>
 
-          <div
-            v-if="showCustomControls"
-            class="flex flex-col gap-2 mt-3 pt-3 border-t border-blue-400/15"
-          >
-            <div class="flex items-center gap-2">
-              <span class="text-slate-400 font-semibold text-sm w-10 shrink-0">YY'</span>
-              <select
-                v-model.number="cYMode"
-                class="bg-[#0a0f1a]/80 border border-blue-400/30 text-slate-300 px-2 py-1 rounded text-sm outline-none"
-                @change="updateCustomParams()"
+              <!-- X Voltage Amplitude -->
+              <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">最大电压:</span>
+                <input
+                  type="range"
+                  min="-1.0"
+                  max="1.0"
+                  step="0.02"
+                  v-model.number="cXAmp"
+                  class="flex-1 h-1 appearance-none bg-blue-400/10 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-400 [&::-webkit-slider-thumb]:cursor-pointer"
+                />
+                <span class="text-blue-300 font-mono w-10 text-right shrink-0"
+                  >{{ cXAmp.toFixed(2) }}V</span
+                >
+              </div>
+
+              <!-- X Period Multiplier -->
+              <div
+                class="flex items-center gap-2 text-xs"
+                :class="{ 'opacity-40 pointer-events-none select-none': cXMode === 0 }"
               >
-                <option :value="0">关闭</option>
-                <option :value="1">恒定</option>
-                <option :value="2">正弦</option>
-                <option :value="3">锯齿</option>
-              </select>
-              <span class="text-slate-500 text-xs w-8">幅度</span>
-              <input
-                type="range"
-                min="-1"
-                max="1"
-                step="0.1"
-                v-model.number="cYAmp"
-                class="flex-1 min-w-12 h-1.5 appearance-none bg-blue-400/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#4a90d9] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
-                @input="updateCustomParams()"
-              />
-              <span class="text-slate-400 text-xs w-8 font-mono">{{ cYAmpValDisplay }}</span>
+                <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">周期倍率:</span>
+                <div
+                  class="flex-1 grid grid-cols-5 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
+                >
+                  <button
+                    v-for="opt in periodOptions"
+                    :key="opt.value"
+                    type="button"
+                    :disabled="cXMode === 0"
+                    :class="[
+                      'py-1 text-center rounded transition-all text-[10px] whitespace-nowrap',
+                      cXMode === 0
+                        ? 'text-slate-600 bg-transparent cursor-not-allowed'
+                        : cXPeriodMult === opt.value
+                          ? 'bg-blue-500/25 text-blue-200 border border-blue-500/30 font-semibold cursor-pointer'
+                          : 'text-slate-400 hover:text-slate-200 cursor-pointer',
+                    ]"
+                    @click="cXPeriodMult = opt.value"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </div>
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="text-slate-400 font-semibold text-sm w-10 shrink-0">XX'</span>
-              <select
-                v-model.number="cXMode"
-                class="bg-[#0a0f1a]/80 border border-blue-400/30 text-slate-300 px-2 py-1 rounded text-sm outline-none"
-                @change="updateCustomParams()"
+
+            <!-- Y-axis settings -->
+            <div class="flex flex-col gap-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-red-400 font-bold text-xs flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                  Y轴信号 (垂直偏转 YY')
+                </span>
+              </div>
+
+              <!-- Y Mode Select -->
+              <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">波形选择:</span>
+                <div
+                  class="flex-1 grid grid-cols-4 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
+                >
+                  <button
+                    v-for="(name, idx) in ['固定', '正弦', '锯齿', '方波']"
+                    :key="idx"
+                    type="button"
+                    :class="[
+                      'py-1 text-center rounded transition-all text-[11px] cursor-pointer whitespace-nowrap',
+                      cYMode === idx
+                        ? 'bg-red-500/25 text-red-200 border border-red-500/30 font-semibold'
+                        : 'text-slate-400 hover:text-slate-200',
+                    ]"
+                    @click="cYMode = idx"
+                  >
+                    {{ name }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Y Voltage Amplitude -->
+              <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">最大电压:</span>
+                <input
+                  type="range"
+                  min="-1.0"
+                  max="1.0"
+                  step="0.02"
+                  v-model.number="cYAmp"
+                  class="flex-1 h-1 appearance-none bg-blue-400/10 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-red-400 [&::-webkit-slider-thumb]:cursor-pointer"
+                />
+                <span class="text-red-300 font-mono w-10 text-right shrink-0"
+                  >{{ cYAmp.toFixed(2) }}V</span
+                >
+              </div>
+
+              <!-- Y Period Multiplier -->
+              <div
+                class="flex items-center gap-2 text-xs"
+                :class="{ 'opacity-40 pointer-events-none select-none': cYMode === 0 }"
               >
-                <option :value="0">关闭</option>
-                <option :value="1">恒定</option>
-                <option :value="2">正弦</option>
-                <option :value="3">锯齿</option>
-              </select>
-              <span class="text-slate-500 text-xs w-8">幅度</span>
-              <input
-                type="range"
-                min="-1"
-                max="1"
-                step="0.1"
-                v-model.number="cXAmp"
-                class="flex-1 min-w-12 h-1.5 appearance-none bg-blue-400/20 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#4a90d9] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
-                @input="updateCustomParams()"
-              />
-              <span class="text-slate-400 text-xs w-8 font-mono">{{ cXAmpValDisplay }}</span>
+                <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">周期倍率:</span>
+                <div
+                  class="flex-1 grid grid-cols-5 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
+                >
+                  <button
+                    v-for="opt in periodOptions"
+                    :key="opt.value"
+                    type="button"
+                    :disabled="cYMode === 0"
+                    :class="[
+                      'py-1 text-center rounded transition-all text-[10px] whitespace-nowrap',
+                      cYMode === 0
+                        ? 'text-slate-600 bg-transparent cursor-not-allowed'
+                        : cYPeriodMult === opt.value
+                          ? 'bg-red-500/25 text-red-200 border border-red-500/30 font-semibold cursor-pointer'
+                          : 'text-slate-400 hover:text-slate-200 cursor-pointer',
+                    ]"
+                    @click="cYPeriodMult = opt.value"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
