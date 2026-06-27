@@ -60,6 +60,7 @@ let plateXX_right: Mesh | null = null;
 let plateYY_bot: Mesh | null = null;
 let plateYY_top: Mesh | null = null;
 let beamGroup: Group | null = null;
+let gridHelper: any = null;
 const screenCanvasW = 512;
 const screenCanvasH = 512;
 
@@ -74,8 +75,8 @@ const YY_PLATE_START = 70;
 const SCREEN_X = 430;
 const PLATE_GAP = 24;
 const PLATE_WIDTH = 40;
-const XX_DEFLECTION_SENSITIVITY = 0.163934;
-const YY_DEFLECTION_SENSITIVITY = 0.101215;
+const XX_DEFLECTION_SENSITIVITY = 0.137705;
+const YY_DEFLECTION_SENSITIVITY = 0.085021;
 const INITIAL_VELOCITY_X = 6;
 const SPAWN_INTERVAL = 1;
 const TRAIL_LENGTH = 24;
@@ -109,13 +110,11 @@ interface EState {
   trail: { x: number; y: number; z: number }[];
   alive: boolean;
 }
-
 interface Impact {
   y: number;
   z: number;
   age: number;
 }
-
 // ============================================================
 // Physics state (Adjustable parameters)
 // ============================================================
@@ -354,8 +353,8 @@ const updateScreenTexture = (): void => {
   screenCtx.moveTo(margin, h / 2);
   screenCtx.lineTo(margin + screenW, h / 2);
   screenCtx.stroke();
-  const scaleX = screenW / 200;
-  const scaleY = screenH / 200;
+  const scaleX = w / 200;
+  const scaleY = h / 200;
   for (const imp of impacts) {
     const alpha = Math.max(0, 1 - imp.age / persistence.value);
     const pixelX = w / 2 + imp.z * scaleX;
@@ -717,8 +716,8 @@ const drawScreenInset = (): void => {
   ctx.moveTo(margin, centerY);
   ctx.lineTo(margin + screenW, centerY);
   ctx.stroke();
-  const scaleX = screenW / 200;
-  const scaleY = screenH / 200;
+  const scaleX = screenW / 168;
+  const scaleY = screenH / 168;
   for (const imp of impacts) {
     const alpha = Math.max(0, 1 - imp.age / persistence.value);
     const pixelX = centerX - imp.z * scaleX;
@@ -766,24 +765,46 @@ const drawUtChart = (
   const ctx = canvasRef.getContext("2d");
   if (!ctx) return;
   ctx.clearRect(0, 0, w, h);
-  const pad = { top: 16, bottom: 16, left: 4, right: 4 };
+  
+  // Adjusted padding to accommodate axis labels (U, t) and neat scales
+  const pad = { top: 22, bottom: 16, left: 28, right: 18 };
   const graphW = w - pad.left - pad.right;
   const graphH = h - pad.top - pad.bottom;
   const centerY = pad.top + graphH / 2;
-  ctx.strokeStyle = "rgba(255,255,255,0.15)";
-  ctx.lineWidth = 0.8;
-  ctx.setLineDash([3, 3]);
+
+  // Draw solid axes with subtle white
+  ctx.strokeStyle = "rgba(255,255,255,0.25)";
+  ctx.lineWidth = 1.0;
   ctx.beginPath();
+  // Vertical Axis (U-axis)
+  ctx.moveTo(pad.left, pad.top - 8);
+  ctx.lineTo(pad.left, h - pad.bottom + 4);
+  // Horizontal Axis (t-axis)
   ctx.moveTo(pad.left, centerY);
-  ctx.lineTo(w - pad.right, centerY);
+  ctx.lineTo(w - pad.right + 6, centerY);
   ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = "rgba(255,255,255,0.4)";
-  ctx.font = '10px "Consolas", monospace';
+
+  // Axis Labels: U and t
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.font = 'bold 10px "Consolas", monospace';
+  
+  // 'U' at the top of vertical axis
+  ctx.textAlign = "center";
+  ctx.fillText("U", pad.left, pad.top - 12);
+  
+  // 't' at the right end of horizontal axis
   ctx.textAlign = "left";
-  ctx.fillText("+1", 1, pad.top + 8);
-  ctx.fillText(" 0", 1, centerY + 3);
-  ctx.fillText("-1", 1, h - pad.bottom + 1);
+  ctx.fillText("t", w - pad.right + 10, centerY + 3);
+
+  // Tick labels / scale values
+  ctx.fillStyle = "rgba(255,255,255,0.4)";
+  ctx.font = '9px "Consolas", monospace';
+  ctx.textAlign = "right";
+  ctx.fillText("+1", pad.left - 4, pad.top + 3);
+  ctx.fillText("0", pad.left - 4, centerY + 3);
+  ctx.fillText("-1", pad.left - 4, h - pad.bottom + 3);
+
+  // Plot waveform
   const maxAmp = graphH / 2 - 4;
   ctx.beginPath();
   ctx.strokeStyle = color;
@@ -820,7 +841,7 @@ const initScene = async (): Promise<void> => {
     1,
     2000,
   );
-  camera.position.set(640, 80, -320);
+  camera.position.set(350, 110, 380);
   camera.lookAt(220, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -850,7 +871,7 @@ const initScene = async (): Promise<void> => {
     scene.add(dirLight);
   }
 
-  const gridHelper = new THREE.GridHelper(600, 30, 0x1a2844, 0x111a2e);
+  gridHelper = new THREE.GridHelper(600, 30, 0x1a2844, 0x111a2e);
   gridHelper.position.set(300, -120, 0);
   scene.add(gridHelper);
 
@@ -887,6 +908,11 @@ const initScene = async (): Promise<void> => {
 useRafFn(() => {
   if (!THREE || !renderer || !scene || !camera) return;
 
+  // Dynamically position the grid helper so it is always on the opposite side of the camera relative to the tube
+  if (gridHelper) {
+    gridHelper.position.y = camera.position.y >= 0 ? -120 : 120;
+  }
+
   if (!isPaused.value) {
     spawnT += 1;
     if (spawnT >= SPAWN_INTERVAL) {
@@ -919,33 +945,45 @@ const onResize = (): void => {
 };
 useEventListener(globalThis, "resize", onResize);
 
-const resetView = (): void => {
-  if (!orbit || !camera) return;
-  orbit.target.set(220, 0, 0);
-  camera.position.set(640, 80, -320);
+const setCameraView = (
+  posX: number,
+  posY: number,
+  posZ: number,
+  upX: number,
+  upY: number,
+  upZ: number
+): void => {
+  if (!orbit || !camera || !renderer || !OrbitControlsCtor) return;
+
+  // Clean up and dispose of previous controls instance
+  orbit.dispose();
+
+  // Reset camera configuration
+  camera.up.set(upX, upY, upZ);
+  camera.position.set(posX, posY, posZ);
   camera.lookAt(220, 0, 0);
+
+  // Create a brand new OrbitControls instance to naturally recompute dragging math
+  orbit = new OrbitControlsCtor(camera, renderer.domElement);
+  orbit.enableDamping = true;
+  orbit.dampingFactor = 0.08;
+  orbit.target.set(220, 0, 0);
   orbit.update();
+};
+
+const resetView = (): void => {
+  setCameraView(350, 110, 380, 0, 1, 0);
 };
 const viewFront = (): void => {
-  if (!orbit || !camera) return;
-  orbit.target.set(220, 0, 0);
-  camera.position.set(750, 0, 0);
-  camera.lookAt(220, 0, 0);
-  orbit.update();
+  setCameraView(750, 0, 0, 0, 1, 0);
 };
 const viewSide = (): void => {
-  if (!orbit || !camera) return;
-  orbit.target.set(220, 0, 0);
-  camera.position.set(640, 80, -320);
-  camera.lookAt(220, 0, 0);
-  orbit.update();
+  // Side view (looking at XX' plates from the side, consistent up vector)
+  setCameraView(220, 10, 500, 0, 1, 0);
 };
 const viewTop = (): void => {
-  if (!orbit || !camera) return;
-  orbit.target.set(220, 0, 0);
-  camera.position.set(220, 500, 1);
-  camera.lookAt(220, 0, 0);
-  orbit.update();
+  // Top-down view with a subtle angle to keep camera orbit dragging feel perfectly consistent
+  setCameraView(220, 490, 20, 0, 1, 0);
 };
 
 // ============================================================
@@ -1025,22 +1063,18 @@ onBeforeUnmount(() => {
                   X轴信号 (水平偏转 XX')
                 </span>
               </div>
-
+              
               <!-- X Mode Select -->
               <div class="flex items-center gap-2 text-xs">
                 <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">波形选择:</span>
-                <div
-                  class="flex-1 grid grid-cols-4 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
-                >
-                  <button
-                    v-for="(name, idx) in ['固定', '锯齿', '正弦', '方波']"
+                <div class="flex-1 grid grid-cols-4 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10">
+                  <button 
+                    v-for="(name, idx) in ['固定', '锯齿', '正弦', '方波']" 
                     :key="idx"
                     type="button"
                     :class="[
                       'py-1 text-center rounded transition-all text-[11px] cursor-pointer whitespace-nowrap',
-                      cXMode === idx
-                        ? 'bg-blue-500/25 text-blue-200 border border-blue-500/30 font-semibold'
-                        : 'text-slate-400 hover:text-slate-200',
+                      cXMode === idx ? 'bg-blue-500/25 text-blue-200 border border-blue-500/30 font-semibold' : 'text-slate-400 hover:text-slate-200'
                     ]"
                     @click="cXMode = idx"
                   >
@@ -1060,20 +1094,13 @@ onBeforeUnmount(() => {
                   v-model.number="cXAmp"
                   class="flex-1 h-1 appearance-none bg-blue-400/10 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-400 [&::-webkit-slider-thumb]:cursor-pointer"
                 />
-                <span class="text-blue-300 font-mono w-10 text-right shrink-0"
-                  >{{ cXAmp.toFixed(2) }}V</span
-                >
+                <span class="text-blue-300 font-mono w-10 text-right shrink-0">{{ cXAmp.toFixed(2) }}V</span>
               </div>
 
               <!-- X Period Multiplier -->
-              <div
-                class="flex items-center gap-2 text-xs"
-                :class="{ 'opacity-40 pointer-events-none select-none': cXMode === 0 }"
-              >
+              <div class="flex items-center gap-2 text-xs" :class="{ 'opacity-40 pointer-events-none select-none': cXMode === 0 }">
                 <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">周期倍率:</span>
-                <div
-                  class="flex-1 grid grid-cols-5 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
-                >
+                <div class="flex-1 grid grid-cols-5 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10">
                   <button
                     v-for="opt in periodOptions"
                     :key="opt.value"
@@ -1085,7 +1112,7 @@ onBeforeUnmount(() => {
                         ? 'text-slate-600 bg-transparent cursor-not-allowed'
                         : cXPeriodMult === opt.value
                           ? 'bg-blue-500/25 text-blue-200 border border-blue-500/30 font-semibold cursor-pointer'
-                          : 'text-slate-400 hover:text-slate-200 cursor-pointer',
+                          : 'text-slate-400 hover:text-slate-200 cursor-pointer'
                     ]"
                     @click="cXPeriodMult = opt.value"
                   >
@@ -1103,22 +1130,18 @@ onBeforeUnmount(() => {
                   Y轴信号 (垂直偏转 YY')
                 </span>
               </div>
-
+              
               <!-- Y Mode Select -->
               <div class="flex items-center gap-2 text-xs">
                 <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">波形选择:</span>
-                <div
-                  class="flex-1 grid grid-cols-4 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
-                >
-                  <button
-                    v-for="(name, idx) in ['固定', '正弦', '锯齿', '方波']"
+                <div class="flex-1 grid grid-cols-4 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10">
+                  <button 
+                    v-for="(name, idx) in ['固定', '正弦', '锯齿', '方波']" 
                     :key="idx"
                     type="button"
                     :class="[
                       'py-1 text-center rounded transition-all text-[11px] cursor-pointer whitespace-nowrap',
-                      cYMode === idx
-                        ? 'bg-red-500/25 text-red-200 border border-red-500/30 font-semibold'
-                        : 'text-slate-400 hover:text-slate-200',
+                      cYMode === idx ? 'bg-red-500/25 text-red-200 border border-red-500/30 font-semibold' : 'text-slate-400 hover:text-slate-200'
                     ]"
                     @click="cYMode = idx"
                   >
@@ -1138,20 +1161,13 @@ onBeforeUnmount(() => {
                   v-model.number="cYAmp"
                   class="flex-1 h-1 appearance-none bg-blue-400/10 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-red-400 [&::-webkit-slider-thumb]:cursor-pointer"
                 />
-                <span class="text-red-300 font-mono w-10 text-right shrink-0"
-                  >{{ cYAmp.toFixed(2) }}V</span
-                >
+                <span class="text-red-300 font-mono w-10 text-right shrink-0">{{ cYAmp.toFixed(2) }}V</span>
               </div>
 
               <!-- Y Period Multiplier -->
-              <div
-                class="flex items-center gap-2 text-xs"
-                :class="{ 'opacity-40 pointer-events-none select-none': cYMode === 0 }"
-              >
+              <div class="flex items-center gap-2 text-xs" :class="{ 'opacity-40 pointer-events-none select-none': cYMode === 0 }">
                 <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">周期倍率:</span>
-                <div
-                  class="flex-1 grid grid-cols-5 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
-                >
+                <div class="flex-1 grid grid-cols-5 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10">
                   <button
                     v-for="opt in periodOptions"
                     :key="opt.value"
@@ -1163,7 +1179,7 @@ onBeforeUnmount(() => {
                         ? 'text-slate-600 bg-transparent cursor-not-allowed'
                         : cYPeriodMult === opt.value
                           ? 'bg-red-500/25 text-red-200 border border-red-500/30 font-semibold cursor-pointer'
-                          : 'text-slate-400 hover:text-slate-200 cursor-pointer',
+                          : 'text-slate-400 hover:text-slate-200 cursor-pointer'
                     ]"
                     @click="cYPeriodMult = opt.value"
                   >
@@ -1215,26 +1231,26 @@ onBeforeUnmount(() => {
           />
         </div>
         <div
-          class="flex-[1.2] flex gap-2 bg-[#0a0f19]/60 rounded-xl border border-blue-400/15 p-3 min-h-0"
+          class="flex-[1.2] flex gap-4 bg-[#0a0f19]/60 rounded-xl border border-blue-400/15 p-3 min-h-0"
         >
           <div class="flex-1 relative min-w-0 flex flex-col min-h-0">
             <span
-              class="absolute top-1.5 left-2 z-10 text-xs font-bold bg-[#060a12]/90 rounded px-2 py-0.5 pointer-events-none text-red-300"
-              >YY' U-t</span
-            >
-            <canvas
-              ref="utYYRef"
-              class="flex-1 w-full rounded-lg bg-[#060a12] border border-blue-400/15 block min-h-0"
-            />
-          </div>
-          <div class="flex-1 relative min-w-0 flex flex-col min-h-0">
-            <span
-              class="absolute top-1.5 left-2 z-10 text-xs font-bold bg-[#060a12]/90 rounded px-2 py-0.5 pointer-events-none text-blue-300"
+              class="absolute top-1.5 right-2 z-10 text-xs font-bold bg-black/40 rounded px-2 py-0.5 pointer-events-none text-blue-300"
               >XX' U-t</span
             >
             <canvas
               ref="utXXRef"
-              class="flex-1 w-full rounded-lg bg-[#060a12] border border-blue-400/15 block min-h-0"
+              class="flex-1 w-full block min-h-0"
+            />
+          </div>
+          <div class="flex-1 relative min-w-0 flex flex-col min-h-0">
+            <span
+              class="absolute top-1.5 right-2 z-10 text-xs font-bold bg-black/40 rounded px-2 py-0.5 pointer-events-none text-red-300"
+              >YY' U-t</span
+            >
+            <canvas
+              ref="utYYRef"
+              class="flex-1 w-full block min-h-0"
             />
           </div>
         </div>
