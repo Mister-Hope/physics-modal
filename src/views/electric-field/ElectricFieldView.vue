@@ -104,7 +104,7 @@ const Physics = {
       eField.normalize().multiplyScalar(stepSize * direction);
       pos.add(eField);
       // 超出显示范围则停止追踪
-      if (pos.length() > 20) break;
+      if (pos.length() > 60) break;
       let tooClose = false;
       for (const charge of charges) {
         if (pos.distanceTo(charge.position as THREE.Vector3) < 0.35) {
@@ -498,8 +498,8 @@ const buildEquipotentialSurfaces = (): void => {
   }
   if (!showEquipotential) return;
 
-  const gridSize = 40;
-  const extent = 8;
+  const gridSize = 80;
+  const extent = 24;
   const step = (2 * extent) / gridSize;
   let vMax = -Infinity;
   let vMin = Infinity;
@@ -799,7 +799,7 @@ const initScene = async (): Promise<void> => {
     0.1,
     100,
   );
-  camera.position.set(0, 8, 14);
+  camera.position.set(0, 24, 42);
   camera.lookAt(0, 0, 0);
 
   // Renderer
@@ -814,7 +814,7 @@ const initScene = async (): Promise<void> => {
     (orbitControls as { enableDamping: boolean }).enableDamping = true;
     (orbitControls as { dampingFactor: number }).dampingFactor = 0.08;
     (orbitControls as { minDistance: number }).minDistance = 3;
-    (orbitControls as { maxDistance: number }).maxDistance = 40;
+    (orbitControls as { maxDistance: number }).maxDistance = 120;
   }
 
   // Lights
@@ -822,12 +822,12 @@ const initScene = async (): Promise<void> => {
   const dirLight = new THREE.DirectionalLight(0xaabbff, 0.8);
   dirLight.position.set(5, 10, 7);
   scene.add(dirLight);
-  const pointLight = new THREE.PointLight(0x5577cc, 0.4, 30);
-  pointLight.position.set(-5, 5, -5);
+  const pointLight = new THREE.PointLight(0x5577cc, 0.4, 90);
+  pointLight.position.set(-15, 15, -15);
   scene.add(pointLight);
 
   // Grid
-  const gridHelper = new THREE.GridHelper(20, 20, 0x1a2844, 0x0f1a2e);
+  const gridHelper = new THREE.GridHelper(60, 60, 0x1a2844, 0x0f1a2e);
   gridHelper.position.y = -0.01;
   scene.add(gridHelper);
 

@@ -3,6 +3,7 @@ import { onKeyStroke, useEventListener, useRafFn } from "@vueuse/core";
 import type {
   Camera,
   CanvasTexture,
+  GridHelper,
   Group,
   LineBasicMaterial,
   Mesh,
@@ -60,7 +61,7 @@ let plateXX_right: Mesh | null = null;
 let plateYY_bot: Mesh | null = null;
 let plateYY_top: Mesh | null = null;
 let beamGroup: Group | null = null;
-let gridHelper: any = null;
+let gridHelper: GridHelper | null = null;
 const screenCanvasW = 512;
 const screenCanvasH = 512;
 
@@ -123,11 +124,11 @@ const persistenceVal = ref("90帧");
 const isPaused = ref(false);
 
 const cYMode = ref(0); // 0: 固定, 1: 正弦, 2: 锯齿, 3: 方波
-const cYAmp = ref(0.0); // 默认0V (固定) 打到中心
+const cYAmp = ref(0); // 默认0V (固定) 打到中心
 const cYPeriodMult = ref<number>(1);
 
 const cXMode = ref(0); // 0: 固定, 1: 锯齿, 2: 正弦, 3: 方波
-const cXAmp = ref(0.0); // 默认0V (固定) 打到中心
+const cXAmp = ref(0); // 默认0V (固定) 打到中心
 const cXPeriodMult = ref<number>(1);
 
 const periodOptions = [
@@ -156,13 +157,13 @@ const getVoltageX = (phase: number): number => {
   return 0;
 };
 
-let curSc = 11,
-  gPhase = 0,
+const curSc = 11;
+let gPhase = 0,
   spawnT = 0;
 let electrons: EState[] = [],
   impacts: Impact[] = [];
 
-const clearBeam = () => {
+const clearBeam = (): void => {
   electrons = [];
   impacts = [];
 };
@@ -593,6 +594,7 @@ const buildLabels = (): Group | null => {
   if (!THREE) return null;
   const group = new THREE.Group();
 
+  // eslint-disable-next-line max-params -- 标签需要文字、坐标和颜色共5个独立参数
   const addLabel = (
     text: string,
     labelX: number,
@@ -765,7 +767,7 @@ const drawUtChart = (
   const ctx = canvasRef.getContext("2d");
   if (!ctx) return;
   ctx.clearRect(0, 0, w, h);
-  
+
   // Adjusted padding to accommodate axis labels (U, t) and neat scales
   const pad = { top: 22, bottom: 16, left: 28, right: 18 };
   const graphW = w - pad.left - pad.right;
@@ -774,7 +776,7 @@ const drawUtChart = (
 
   // Draw solid axes with subtle white
   ctx.strokeStyle = "rgba(255,255,255,0.25)";
-  ctx.lineWidth = 1.0;
+  ctx.lineWidth = 1;
   ctx.beginPath();
   // Vertical Axis (U-axis)
   ctx.moveTo(pad.left, pad.top - 8);
@@ -787,11 +789,11 @@ const drawUtChart = (
   // Axis Labels: U and t
   ctx.fillStyle = "rgba(255,255,255,0.7)";
   ctx.font = 'bold 10px "Consolas", monospace';
-  
+
   // 'U' at the top of vertical axis
   ctx.textAlign = "center";
   ctx.fillText("U", pad.left, pad.top - 12);
-  
+
   // 't' at the right end of horizontal axis
   ctx.textAlign = "left";
   ctx.fillText("t", w - pad.right + 10, centerY + 3);
@@ -909,9 +911,7 @@ useRafFn(() => {
   if (!THREE || !renderer || !scene || !camera) return;
 
   // Dynamically position the grid helper so it is always on the opposite side of the camera relative to the tube
-  if (gridHelper) {
-    gridHelper.position.y = camera.position.y >= 0 ? -120 : 120;
-  }
+  if (gridHelper) gridHelper.position.y = camera.position.y >= 0 ? -120 : 120;
 
   if (!isPaused.value) {
     spawnT += 1;
@@ -945,13 +945,14 @@ const onResize = (): void => {
 };
 useEventListener(globalThis, "resize", onResize);
 
+// eslint-disable-next-line max-params -- 相机视角需要位置和上方向共6个独立参数
 const setCameraView = (
   posX: number,
   posY: number,
   posZ: number,
   upX: number,
   upY: number,
-  upZ: number
+  upZ: number,
 ): void => {
   if (!orbit || !camera || !renderer || !OrbitControlsCtor) return;
 
@@ -1063,18 +1064,22 @@ onBeforeUnmount(() => {
                   X轴信号 (水平偏转 XX')
                 </span>
               </div>
-              
+
               <!-- X Mode Select -->
               <div class="flex items-center gap-2 text-xs">
                 <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">波形选择:</span>
-                <div class="flex-1 grid grid-cols-4 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10">
-                  <button 
-                    v-for="(name, idx) in ['固定', '锯齿', '正弦', '方波']" 
+                <div
+                  class="flex-1 grid grid-cols-4 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
+                >
+                  <button
+                    v-for="(name, idx) in ['固定', '锯齿', '正弦', '方波']"
                     :key="idx"
                     type="button"
                     :class="[
                       'py-1 text-center rounded transition-all text-[11px] cursor-pointer whitespace-nowrap',
-                      cXMode === idx ? 'bg-blue-500/25 text-blue-200 border border-blue-500/30 font-semibold' : 'text-slate-400 hover:text-slate-200'
+                      cXMode === idx
+                        ? 'bg-blue-500/25 text-blue-200 border border-blue-500/30 font-semibold'
+                        : 'text-slate-400 hover:text-slate-200',
                     ]"
                     @click="cXMode = idx"
                   >
@@ -1094,13 +1099,20 @@ onBeforeUnmount(() => {
                   v-model.number="cXAmp"
                   class="flex-1 h-1 appearance-none bg-blue-400/10 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-400 [&::-webkit-slider-thumb]:cursor-pointer"
                 />
-                <span class="text-blue-300 font-mono w-10 text-right shrink-0">{{ cXAmp.toFixed(2) }}V</span>
+                <span class="text-blue-300 font-mono w-10 text-right shrink-0"
+                  >{{ cXAmp.toFixed(2) }}V</span
+                >
               </div>
 
               <!-- X Period Multiplier -->
-              <div class="flex items-center gap-2 text-xs" :class="{ 'opacity-40 pointer-events-none select-none': cXMode === 0 }">
+              <div
+                class="flex items-center gap-2 text-xs"
+                :class="{ 'opacity-40 pointer-events-none select-none': cXMode === 0 }"
+              >
                 <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">周期倍率:</span>
-                <div class="flex-1 grid grid-cols-5 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10">
+                <div
+                  class="flex-1 grid grid-cols-5 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
+                >
                   <button
                     v-for="opt in periodOptions"
                     :key="opt.value"
@@ -1112,7 +1124,7 @@ onBeforeUnmount(() => {
                         ? 'text-slate-600 bg-transparent cursor-not-allowed'
                         : cXPeriodMult === opt.value
                           ? 'bg-blue-500/25 text-blue-200 border border-blue-500/30 font-semibold cursor-pointer'
-                          : 'text-slate-400 hover:text-slate-200 cursor-pointer'
+                          : 'text-slate-400 hover:text-slate-200 cursor-pointer',
                     ]"
                     @click="cXPeriodMult = opt.value"
                   >
@@ -1130,18 +1142,22 @@ onBeforeUnmount(() => {
                   Y轴信号 (垂直偏转 YY')
                 </span>
               </div>
-              
+
               <!-- Y Mode Select -->
               <div class="flex items-center gap-2 text-xs">
                 <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">波形选择:</span>
-                <div class="flex-1 grid grid-cols-4 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10">
-                  <button 
-                    v-for="(name, idx) in ['固定', '正弦', '锯齿', '方波']" 
+                <div
+                  class="flex-1 grid grid-cols-4 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
+                >
+                  <button
+                    v-for="(name, idx) in ['固定', '正弦', '锯齿', '方波']"
                     :key="idx"
                     type="button"
                     :class="[
                       'py-1 text-center rounded transition-all text-[11px] cursor-pointer whitespace-nowrap',
-                      cYMode === idx ? 'bg-red-500/25 text-red-200 border border-red-500/30 font-semibold' : 'text-slate-400 hover:text-slate-200'
+                      cYMode === idx
+                        ? 'bg-red-500/25 text-red-200 border border-red-500/30 font-semibold'
+                        : 'text-slate-400 hover:text-slate-200',
                     ]"
                     @click="cYMode = idx"
                   >
@@ -1161,13 +1177,20 @@ onBeforeUnmount(() => {
                   v-model.number="cYAmp"
                   class="flex-1 h-1 appearance-none bg-blue-400/10 rounded-sm outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-red-400 [&::-webkit-slider-thumb]:cursor-pointer"
                 />
-                <span class="text-red-300 font-mono w-10 text-right shrink-0">{{ cYAmp.toFixed(2) }}V</span>
+                <span class="text-red-300 font-mono w-10 text-right shrink-0"
+                  >{{ cYAmp.toFixed(2) }}V</span
+                >
               </div>
 
               <!-- Y Period Multiplier -->
-              <div class="flex items-center gap-2 text-xs" :class="{ 'opacity-40 pointer-events-none select-none': cYMode === 0 }">
+              <div
+                class="flex items-center gap-2 text-xs"
+                :class="{ 'opacity-40 pointer-events-none select-none': cYMode === 0 }"
+              >
                 <span class="text-slate-400 w-14 shrink-0 whitespace-nowrap">周期倍率:</span>
-                <div class="flex-1 grid grid-cols-5 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10">
+                <div
+                  class="flex-1 grid grid-cols-5 gap-1 bg-black/40 p-0.5 rounded border border-blue-400/10"
+                >
                   <button
                     v-for="opt in periodOptions"
                     :key="opt.value"
@@ -1179,7 +1202,7 @@ onBeforeUnmount(() => {
                         ? 'text-slate-600 bg-transparent cursor-not-allowed'
                         : cYPeriodMult === opt.value
                           ? 'bg-red-500/25 text-red-200 border border-red-500/30 font-semibold cursor-pointer'
-                          : 'text-slate-400 hover:text-slate-200 cursor-pointer'
+                          : 'text-slate-400 hover:text-slate-200 cursor-pointer',
                     ]"
                     @click="cYPeriodMult = opt.value"
                   >
@@ -1238,20 +1261,14 @@ onBeforeUnmount(() => {
               class="absolute top-1.5 right-2 z-10 text-xs font-bold bg-black/40 rounded px-2 py-0.5 pointer-events-none text-blue-300"
               >XX' U-t</span
             >
-            <canvas
-              ref="utXXRef"
-              class="flex-1 w-full block min-h-0"
-            />
+            <canvas ref="utXXRef" class="flex-1 w-full block min-h-0" />
           </div>
           <div class="flex-1 relative min-w-0 flex flex-col min-h-0">
             <span
               class="absolute top-1.5 right-2 z-10 text-xs font-bold bg-black/40 rounded px-2 py-0.5 pointer-events-none text-red-300"
               >YY' U-t</span
             >
-            <canvas
-              ref="utYYRef"
-              class="flex-1 w-full block min-h-0"
-            />
+            <canvas ref="utYYRef" class="flex-1 w-full block min-h-0" />
           </div>
         </div>
       </div>
