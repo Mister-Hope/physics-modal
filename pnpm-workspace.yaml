@@ -1,6 +1,10 @@
 configDependencies:
-  pacquet: ^0.11.11
+  pacquet: ^0.11.12
 
 enableGlobalVirtualStore: true
+
+minimumReleaseAgeExclude:
+  - "@typescript/*"
+  - typescript
 
 trustPolicy: no-downgrade

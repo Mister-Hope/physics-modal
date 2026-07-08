@@ -1,8 +1,7 @@
-name: Build and Deploy
+name: Deploy website
 
 on:
   push:
-  pull_request:
     branches:
       - main
 
@@ -10,33 +9,36 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v7
 
-      - name: PNPM setup
+      - name: Setup pnpm
         uses: pnpm/action-setup@v6
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm ci
 
       - name: Run build
-        run: pnpm build
+        run: pnpm run build
 
       - name: Run linter
         run: pnpm lint
 
-      - name: Deploy docs
+      - name: Deploy website
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages
+          branch: deploy
           folder: dist
           single-commit: true
+
+      - name: Trigger Hook
+        run: curl -s "${{ secrets.BT_WEBHOOK_URL }}"
