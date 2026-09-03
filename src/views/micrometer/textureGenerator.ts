@@ -56,7 +56,7 @@ export const createSleeveTexture = (): {
   ctx.strokeStyle = "#020617";
   ctx.lineWidth = 5.2;
   ctx.beginPath();
-  ctx.moveTo(startX - 60, datumY);
+  ctx.moveTo(startX, datumY);
   ctx.lineTo(endX + 80, datumY);
   ctx.stroke();
 

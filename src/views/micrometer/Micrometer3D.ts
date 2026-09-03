@@ -6,6 +6,7 @@ import {
   Color,
   CylinderGeometry,
   DirectionalLight,
+  ExtrudeGeometry,
   Group,
   HemisphereLight,
   Mesh,
@@ -16,6 +17,7 @@ import {
   PlaneGeometry,
   Raycaster,
   Scene,
+  Shape,
   SphereGeometry,
   Vector2,
   Vector3,
@@ -58,6 +60,8 @@ export class Micrometer3D {
   private targetReading: number = 0;
   private isLocked: boolean = false;
   private isDraggingThimble: boolean = false;
+  private isDraggingRatchet: boolean = false;
+  private sampleSize = 0;
   private dragStartY: number = 0;
   private dragStartReading: number = 0;
 
@@ -67,7 +71,7 @@ export class Micrometer3D {
   private readonly mouse = new Vector2();
 
   // Dimensions (enlarged throat clearance & exact proportions)
-  readonly SLEEVE_START_X = 40; // where 0 mm scale starts (moved rightward for clear distance from collar)
+  readonly SLEEVE_START_X = 32; // 0 mm scale starts about 1 mm after the collar edge at X = 31
   readonly SLEEVE_SCALE_LEN = 25; // 25 mm scale length
 
   constructor(
@@ -260,19 +264,38 @@ export class Micrometer3D {
     const lockNutGeo = new CylinderGeometry(3.6, 3.6, 3, 20);
     lockNutGeo.rotateZ(Math.PI / 2);
     const lockNut = new Mesh(lockNutGeo, satinSteelMaterial);
-    lockNut.position.set(25.5, 0, 0);
+    lockNut.position.set(27.5, 0, 0);
     frameGroup.add(lockNut);
 
-    const leverGeo = new CylinderGeometry(0.7, 0.7, 5.5, 12);
+    // The lock is on the front face: a central screw pierces the wide root of
+    // a flat, seed-shaped locking plate. The camera's default side is +Z.
+    const screwGeo = new CylinderGeometry(0.85, 0.85, 0.7, 24);
+    screwGeo.rotateX(Math.PI / 2);
+    const screwMesh = new Mesh(screwGeo, chromeMaterial);
+    screwMesh.position.set(27.5, 0, 5.25);
+    frameGroup.add(screwMesh);
+
+    const leverShape = new Shape();
+    leverShape.moveTo(-1.55, 1.2);
+    leverShape.bezierCurveTo(-1.4, 2.2, 1.4, 2.2, 1.55, 1.2);
+    leverShape.bezierCurveTo(1.45, -0.1, 0.85, -1.25, 0.35, -4.9);
+    leverShape.bezierCurveTo(0.2, -5.8, -0.2, -5.8, -0.35, -4.9);
+    leverShape.bezierCurveTo(-0.85, -1.25, -1.45, -0.1, -1.55, 1.2);
+    const leverGeo = new ExtrudeGeometry(leverShape, {
+      depth: 0.55,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      bevelSize: 0.12,
+      bevelThickness: 0.08,
+    });
+    leverGeo.translate(0, 0, -0.275);
     this.lockLeverMesh = new Mesh(leverGeo, plasticGripMaterial);
-    this.lockLeverMesh.position.set(25.5, 4.2, 0);
-    this.lockLeverMesh.rotation.x = Math.PI * 0.15;
+    this.lockLeverMesh.position.set(27.5, 0, 5.55);
     frameGroup.add(this.lockLeverMesh);
 
     // -------------------------------------------------------------
     // 2. SLEEVE (固定套管主尺) - Exact longitudinal mapping
-    // Collar ends at X = 31.0, Scale starts at SLEEVE_START_X = 40.0
-    // Providing a generous, clear 9.0 mm gap between the blue collar and the 0 mm mark!
+    // Collar ends at X = 31.0, with only about 1.0 mm before the 0 mm scale mark.
     // Sleeve ends at X = 66.5 mm (just past 25 mm mark at 65.0 mm), perfectly encapsulated by thimble!
     // -------------------------------------------------------------
     const sleeveRadius = 4.8;
@@ -372,7 +395,7 @@ export class Micrometer3D {
     // -------------------------------------------------------------
     // 4. SPINDLE (测微螺杆) - Slender 2.2mm precision stainless steel
     // -------------------------------------------------------------
-    const spindleLen = 85; // Extended to span new SLEEVE_START_X = 40.0
+    const spindleLen = 85; // Extended to span the sleeve scale beginning at X = 32.0
     const spindleRadius = 2.2; // Slender radius matching anvil
     const spindleGeo = new CylinderGeometry(spindleRadius, spindleRadius, spindleLen, 32);
     spindleGeo.rotateZ(-Math.PI / 2);
@@ -401,9 +424,10 @@ export class Micrometer3D {
       this.mouse.set(ndc.x, ndc.y);
       this.raycaster.setFromCamera(this.mouse, this.camera);
 
-      // Check if clicked on thimble or ratchet
       const intersects = this.raycaster.intersectObjects(this.thimbleGroup.children, true);
       if (intersects.length > 0) {
+        const hitRatchet = intersects.some(({ object }) => object === this.ratchetMesh);
+        this.isDraggingRatchet = hitRatchet;
         this.isDraggingThimble = true;
         this.dragStartY = e.clientY;
         this.dragStartReading = this.currentReading;
@@ -430,8 +454,9 @@ export class Micrometer3D {
     });
 
     globalThis.addEventListener("pointerup", () => {
-      if (this.isDraggingThimble) {
+      if (this.isDraggingThimble || this.isDraggingRatchet) {
         this.isDraggingThimble = false;
+        this.isDraggingRatchet = false;
         this.controls.enabled = true;
         dom.style.cursor = "default";
       }
@@ -453,6 +478,7 @@ export class Micrometer3D {
           const step = e.shiftKey ? 0.001 : 0.01;
           const direction = e.deltaY > 0 ? 1 : -1;
           const newReading = Math.max(0, Math.min(25, this.currentReading + direction * step));
+
           this.setReading(newReading, true);
           soundManager.playRatchetClick();
           this.onReadingChange?.(newReading);
@@ -483,7 +509,8 @@ export class Micrometer3D {
    * @param animate Whether to animate to the target.
    */
   setReading(millimeters: number, animate: boolean = false): void {
-    const clamped = Math.max(0, Math.min(25, millimeters));
+    const maxReading = this.sampleSize > 0 ? this.sampleSize : 25;
+    const clamped = Math.max(0, Math.min(maxReading, millimeters));
     if (animate) {
       this.targetReading = clamped;
     } else {
@@ -499,7 +526,7 @@ export class Micrometer3D {
 
   setLocked(locked: boolean): void {
     this.isLocked = locked;
-    this.lockLeverMesh.rotation.x = locked ? -Math.PI * 0.15 : Math.PI * 0.15;
+    this.lockLeverMesh.rotation.z = locked ? -Math.PI * 0.08 : Math.PI * 0.08;
   }
 
   /**
@@ -541,19 +568,17 @@ export class Micrometer3D {
       this.sampleMesh = null;
     }
 
+    this.sampleSize = 0;
     if (!sample) return;
 
+    this.sampleSize = sample.sizeMm;
+
     let geo: BufferGeometry;
-    if (sample.type === "sphere") {
-      geo = new SphereGeometry(sample.sizeMm / 2, 32, 24);
-    } else if (sample.type === "wire") {
+    if (sample.type === "sphere") geo = new SphereGeometry(sample.sizeMm / 2, 32, 24);
+    else if (sample.type === "wire")
       geo = new CylinderGeometry(sample.sizeMm / 2, sample.sizeMm / 2, 22, 24);
-      geo.rotateZ(Math.PI / 2);
-    } else if (sample.type === "box") {
-      geo = new BoxGeometry(sample.sizeMm, 12, 12);
-    } else {
-      geo = new CylinderGeometry(sample.sizeMm / 2, sample.sizeMm / 2, 14, 32);
-    }
+    else if (sample.type === "box") geo = new BoxGeometry(sample.sizeMm, 12, 12);
+    else geo = new CylinderGeometry(sample.sizeMm / 2, sample.sizeMm / 2, 14, 32);
 
     const mat = new MeshStandardMaterial({
       color: sample.color,

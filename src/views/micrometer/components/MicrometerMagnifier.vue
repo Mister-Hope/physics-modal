@@ -3,13 +3,8 @@ import { computed } from "vue";
 
 import type { MicrometerReading } from "../micrometerPhysics";
 
-const {
-  reading,
-  zeroError,
-  hidden = false,
-} = defineProps<{
+const { reading, hidden = false } = defineProps<{
   reading: MicrometerReading;
-  zeroError: number;
   hidden?: boolean;
 }>();
 const width = 320;
@@ -164,18 +159,12 @@ const sleeveMarks = computed(() =>
         ><span v-if="!hidden">× 0.01 = {{ reading.thimbleMm.toFixed(3) }} mm</span>
       </div>
     </div>
-    <div v-if="zeroError" class="zero-note">
-      校准零误差：{{ zeroError > 0 ? "+" : "" }}{{ zeroError.toFixed(3) }} mm
-      <span>{{
-        hidden ? "学生自主代入公式修正" : `实际值 = ${(reading.rawMm - zeroError).toFixed(3)} mm`
-      }}</span>
-    </div>
   </div>
 </template>
 
 <style scoped>
 .magnifier-panel {
-  padding: 14px;
+  padding: 28px;
   border: 1px solid #334155cc;
   border-radius: 12px;
   color: #e2e8f0;
@@ -186,77 +175,77 @@ const sleeveMarks = computed(() =>
 .magnifier-heading {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-bottom: 9px;
-  font-size: 11px;
+  gap: 14px;
+  margin-bottom: 18px;
+  font-size: 22px;
 }
 .live-dot {
-  width: 9px;
-  height: 9px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #22d3ee;
   box-shadow: 0 0 10px #22d3ee;
 }
 .zoom-badge {
   margin-left: auto;
-  padding: 3px 6px;
+  padding: 6px 12px;
   border: 1px solid #155e75;
   border-radius: 5px;
   color: #67e8f9;
   background: #08334499;
   font:
-    10px ui-monospace,
+    20px ui-monospace,
     monospace;
 }
 .magnifier-stage {
   position: relative;
   overflow: hidden;
   border: 1px solid #1e293b;
-  border-radius: 8px;
+  border-radius: 16px;
   background: #020617;
 }
 .magnifier-stage svg {
   display: block;
   width: 100%;
-  height: 176px;
+  height: 352px;
 }
 .alignment {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 3px 6px;
+  top: 16px;
+  right: 16px;
+  padding: 6px 12px;
   border: 1px solid #854d0e;
   border-radius: 4px;
   color: #fbbf24;
   background: #451a03dd;
   font:
-    10px ui-monospace,
+    20px ui-monospace,
     monospace;
 }
 .breakdown-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 16px;
+  margin-top: 20px;
 }
 .breakdown-grid > div {
-  min-height: 54px;
-  padding: 9px;
+  min-height: 108px;
+  padding: 18px;
   border: 1px solid #334155;
   border-radius: 8px;
   background: #1e293dcc;
-  font-size: 11px;
+  font-size: 22px;
 }
 .breakdown-grid small {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   color: #94a3b8;
 }
 .breakdown-grid b {
   display: block;
   color: #f8fafc;
   font:
-    600 13px ui-monospace,
+    600 26px ui-monospace,
     monospace;
 }
 .breakdown-grid span,
@@ -267,7 +256,7 @@ const sleeveMarks = computed(() =>
 .breakdown-grid em {
   display: block;
   color: #34d399;
-  font-size: 10px;
+  font-size: 20px;
 }
 .zero-note {
   margin-top: 8px;

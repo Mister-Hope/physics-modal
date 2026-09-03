@@ -13,7 +13,6 @@ import type { MicrometerSample } from "./micrometerPhysics";
 const canvas = ref<HTMLElement>();
 const reading = ref(6.842);
 const locked = ref(false);
-const zeroError = ref(0);
 const preset = ref<"overview" | "closeup" | "anvil" | "top">("closeup");
 const sampleId = ref("");
 const hidden = ref(false);
@@ -22,10 +21,8 @@ const showTheory = ref(false);
 let model: Micrometer3D | null = null;
 
 const breakdown = computed(() => calculateMicrometerReading(reading.value));
-const corrected = computed(() => (reading.value - zeroError.value).toFixed(3));
 
 const setReading = (value: number): void => {
-  if (locked.value) return;
   const roundedValue = Number(value.toFixed(3));
   reading.value = Math.max(0, Math.min(25, roundedValue));
   model?.setReading(reading.value, false);
@@ -39,7 +36,7 @@ const selectSample = (sample: MicrometerSample | undefined): void => {
   sampleId.value = sample?.id ?? "";
   model?.setSampleObject(sample ? { ...sample } : null);
   if (sample) {
-    setReading(sample.sizeMm);
+    setReading(Math.min(25, sample.sizeMm + 2));
     preset.value = "anvil";
     model?.setViewPreset("anvil");
   }
@@ -100,7 +97,6 @@ onBeforeUnmount(() => {
           v-if="showMagnifier"
           class="magnifier"
           :reading="breakdown"
-          :zero-error="zeroError"
           :hidden="hidden"
         />
       </section>
@@ -111,10 +107,9 @@ onBeforeUnmount(() => {
           <div :class="['reading-value', { masked: hidden }]">
             {{ hidden ? "?.???" : breakdown.formatted }} <small>mm</small>
           </div>
-          <div class="formula">
+          <div v-if="!hidden" class="formula">
             L = {{ breakdown.sleeveTotalMm.toFixed(1) }} + {{ breakdown.thimbleMm.toFixed(3) }} mm
           </div>
-          <div class="corrected" v-if="zeroError">零误差修正：{{ corrected }} mm</div>
         </section>
 
         <section class="panel-section">
@@ -151,14 +146,6 @@ onBeforeUnmount(() => {
               <option value="top">俯视</option>
             </select>
           </div>
-          <div>
-            <label class="section-label">零误差</label
-            ><select v-model.number="zeroError">
-              <option :value="0">0.000 mm</option>
-              <option :value="0.015">+0.015 mm</option>
-              <option :value="-0.018">−0.018 mm</option>
-            </select>
-          </div>
         </section>
 
         <section class="panel-section">
@@ -175,7 +162,7 @@ onBeforeUnmount(() => {
           >
             <option value="">无</option>
             <option v-for="item in micrometerSamples" :key="item.id" :value="item.id">
-              {{ item.name }} · {{ item.sizeMm.toFixed(3) }} mm
+              {{ item.name }}
             </option>
           </select>
         </section>
@@ -268,7 +255,7 @@ select {
   position: absolute;
   bottom: 16px;
   left: 16px;
-  width: min(430px, calc(100% - 32px));
+  width: min(860px, calc(100% - 32px));
 }
 .eyebrow,
 .section-label {
@@ -310,6 +297,11 @@ select {
 .corrected {
   margin-top: 6px;
   color: #fbbf24;
+}
+.corrected span {
+  margin-left: 10px;
+  color: #fde68a;
+  font-family: ui-monospace, monospace;
 }
 .section-label {
   display: flex;
