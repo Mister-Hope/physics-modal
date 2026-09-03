@@ -886,13 +886,9 @@ const initScene = async (): Promise<void> => {
   if (screenPlane) scene.add(screenPlane);
 
   buildPlates();
-  if (plateYY_top) {
-    scene.add(plateYY_top);
-  }
+  if (plateYY_top) scene.add(plateYY_top);
   if (plateYY_bot) scene.add(plateYY_bot);
-  if (plateXX_left) {
-    scene.add(plateXX_left);
-  }
+  if (plateXX_left) scene.add(plateXX_left);
   if (plateXX_right) scene.add(plateXX_right);
 
   const gun = buildGunMesh();
