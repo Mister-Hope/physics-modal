@@ -38,6 +38,13 @@ const demos = [
     icon: "mdi:lightning-bolt",
     iconColor: "text-yellow-400",
   },
+  {
+    path: "/micrometer",
+    title: "螺旋测微器",
+    description: "三维交互式千分尺，练习主尺、微分筒读数与零误差修正。",
+    icon: "mdi:ruler-square",
+    iconColor: "text-cyan-400",
+  },
 ];
 </script>
 

@@ -35,5 +35,10 @@ export const router = createRouter({
       name: "electric-field",
       component: () => import("@/views/electric-field/ElectricFieldView.vue"),
     },
+    {
+      path: "/micrometer",
+      name: "micrometer",
+      component: () => import("@/views/micrometer/MicrometerView.vue"),
+    },
   ],
 });
