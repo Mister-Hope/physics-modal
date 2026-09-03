@@ -40,5 +40,10 @@ export const router = createRouter({
       name: "micrometer",
       component: () => import("@/views/micrometer/MicrometerView.vue"),
     },
+    {
+      path: "/multimeter",
+      name: "multimeter",
+      component: () => import("@/views/multimeter/MultimeterView.vue"),
+    },
   ],
 });

@@ -45,6 +45,13 @@ const demos = [
     icon: "mdi:ruler-square",
     iconColor: "text-cyan-400",
   },
+  {
+    path: "/multimeter",
+    title: "多用电表",
+    description: "模拟指针式多用电表的换挡、指针偏转与读数过程。",
+    icon: "mdi:gauge",
+    iconColor: "text-orange-400",
+  },
 ];
 </script>
 
