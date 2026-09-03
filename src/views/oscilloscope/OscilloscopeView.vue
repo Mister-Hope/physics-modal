@@ -158,10 +158,10 @@ const getVoltageX = (phase: number): number => {
 };
 
 const curSc = 11;
-let gPhase = 0,
-  spawnT = 0;
-let electrons: EState[] = [],
-  impacts: Impact[] = [];
+let gPhase = 0;
+let spawnT = 0;
+let electrons: EState[] = [];
+let impacts: Impact[] = [];
 
 const clearBeam = (): void => {
   electrons = [];
@@ -322,8 +322,8 @@ const buildScreenPlane = (): Mesh | null => {
 
 const updateScreenTexture = (): void => {
   if (!screenCtx || !screenTexture) return;
-  const h = screenCanvasH,
-    w = screenCanvasW;
+  const h = screenCanvasH;
+  const w = screenCanvasW;
   screenCtx.clearRect(0, 0, w, h);
   screenCtx.fillStyle = "#060a12";
   screenCtx.fillRect(0, 0, w, h);
@@ -684,8 +684,8 @@ const drawScreenInset = (): void => {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-  const h = canvas.height,
-    w = canvas.width;
+  const h = canvas.height;
+  const w = canvas.width;
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = "#060a12";
   ctx.fillRect(0, 0, w, h);
@@ -762,8 +762,8 @@ const drawUtChart = (
     canvasRef.width = displayW;
     canvasRef.height = displayH;
   }
-  const h = canvasRef.height,
-    w = canvasRef.width;
+  const h = canvasRef.height;
+  const w = canvasRef.width;
   const ctx = canvasRef.getContext("2d");
   if (!ctx) return;
   ctx.clearRect(0, 0, w, h);

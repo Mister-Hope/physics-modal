@@ -475,9 +475,9 @@ const marchingCubes = (
         const triIndices = MC_TRI_TABLE[cubeIndex];
         for (let triIdx = 0; triIdx < triIndices.length; triIdx += 3) {
           if (triIndices[triIdx] === -1) break;
-          const v0 = edgeVertices[triIndices[triIdx]],
-            v1 = edgeVertices[triIndices[triIdx + 1]],
-            v2 = edgeVertices[triIndices[triIdx + 2]];
+          const v0 = edgeVertices[triIndices[triIdx]];
+          const v1 = edgeVertices[triIndices[triIdx + 1]];
+          const v2 = edgeVertices[triIndices[triIdx + 2]];
           if (v0 && v1 && v2) vertices.push(v0.x, v0.y, v0.z, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
         }
       }
@@ -507,9 +507,9 @@ const buildEquipotentialSurfaces = (): void => {
   for (let ix = 0; ix <= gridSize; ix++) {
     for (let iy = 0; iy <= gridSize; iy++) {
       for (let iz = 0; iz <= gridSize; iz++) {
-        const x = -extent + ix * step,
-          y = -extent + iy * step,
-          z = -extent + iz * step;
+        const x = -extent + ix * step;
+        const y = -extent + iy * step;
+        const z = -extent + iz * step;
         const point = new THREE.Vector3(x, y, z);
         let tooClose = false;
         for (const charge of chargeData) {

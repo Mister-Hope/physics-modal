@@ -7,11 +7,8 @@ import NavBar from "@/components/NavBar.vue";
 
 import MicrometerMagnifier from "./components/MicrometerMagnifier.vue";
 import { Micrometer3D } from "./Micrometer3D";
-import {
-  calculateMicrometerReading,
-  micrometerSamples,
-  type MicrometerSample,
-} from "./micrometerPhysics";
+import { calculateMicrometerReading, micrometerSamples } from "./micrometerPhysics";
+import type { MicrometerSample } from "./micrometerPhysics";
 
 const canvas = ref<HTMLElement>();
 const reading = ref(6.842);
@@ -22,22 +19,23 @@ const sampleId = ref("");
 const hidden = ref(false);
 const showMagnifier = ref(false);
 const showTheory = ref(false);
-let model: Micrometer3D | undefined;
+let model: Micrometer3D | null = null;
 
 const breakdown = computed(() => calculateMicrometerReading(reading.value));
 const corrected = computed(() => (reading.value - zeroError.value).toFixed(3));
 
-function setReading(value: number) {
+const setReading = (value: number): void => {
   if (locked.value) return;
-  reading.value = Math.max(0, Math.min(25, Number(value.toFixed(3))));
+  const roundedValue = Number(value.toFixed(3));
+  reading.value = Math.max(0, Math.min(25, roundedValue));
   model?.setReading(reading.value, false);
-}
+};
 
-function adjust(delta: number) {
+const adjust = (delta: number): void => {
   setReading(reading.value + delta);
-}
+};
 
-function selectSample(sample: MicrometerSample | undefined) {
+const selectSample = (sample: MicrometerSample | undefined): void => {
   sampleId.value = sample?.id ?? "";
   model?.setSampleObject(sample ? { ...sample } : null);
   if (sample) {
@@ -45,17 +43,17 @@ function selectSample(sample: MicrometerSample | undefined) {
     preset.value = "anvil";
     model?.setViewPreset("anvil");
   }
-}
+};
 
-function selectPreset(value: typeof preset.value) {
+const selectPreset = (value: typeof preset.value): void => {
   preset.value = value;
   model?.setViewPreset(value);
-}
+};
 
-function toggleLock() {
+const toggleLock = (): void => {
   locked.value = !locked.value;
   model?.setLocked(locked.value);
-}
+};
 
 onMounted(async () => {
   await nextTick();
@@ -69,7 +67,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   model?.destroy();
-  model = undefined;
+  model = null;
 });
 </script>
 

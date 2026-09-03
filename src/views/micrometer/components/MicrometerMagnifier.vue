@@ -3,21 +3,26 @@ import { computed } from "vue";
 
 import type { MicrometerReading } from "../micrometerPhysics";
 
-const props = withDefaults(
-  defineProps<{ reading: MicrometerReading; zeroError: number; hidden?: boolean }>(),
-  { hidden: false },
-);
+const {
+  reading,
+  zeroError,
+  hidden = false,
+} = defineProps<{
+  reading: MicrometerReading;
+  zeroError: number;
+  hidden?: boolean;
+}>();
 const width = 320;
 const height = 160;
 const datumY = height / 2;
 const edgeX = 180;
 const pxPerMm = 38;
 const pxPerGrid = 7;
-const startMm = computed(() => Math.max(0, Math.floor(props.reading.rawMm) - 2));
+const startMm = computed(() => Math.max(0, Math.floor(reading.rawMm) - 2));
 const endMm = computed(() => Math.min(25, startMm.value + 6));
-const visibleGridStart = computed(() => Math.floor(props.reading.thimbleGrids - 8));
-const visibleGridEnd = computed(() => Math.ceil(props.reading.thimbleGrids + 8));
-const getX = (mm: number) => edgeX - (props.reading.rawMm - mm) * pxPerMm;
+const visibleGridStart = computed(() => Math.floor(reading.thimbleGrids - 8));
+const visibleGridEnd = computed(() => Math.ceil(reading.thimbleGrids + 8));
+const getX = (millimeters: number): number => edgeX - (reading.rawMm - millimeters) * pxPerMm;
 const gridMarks = computed(() =>
   Array.from(
     { length: visibleGridEnd.value - visibleGridStart.value + 1 },

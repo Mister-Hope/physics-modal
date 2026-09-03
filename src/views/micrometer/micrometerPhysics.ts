@@ -6,7 +6,7 @@ export interface MicrometerReading {
   formatted: string;
 }
 
-export function calculateMicrometerReading(value: number): MicrometerReading {
+export const calculateMicrometerReading = (value: number): MicrometerReading => {
   const rawMm = Math.max(0, Math.min(25, value));
   const sleeveMainMm = Math.floor(rawMm);
   const remainder = rawMm - sleeveMainMm;
@@ -21,7 +21,7 @@ export function calculateMicrometerReading(value: number): MicrometerReading {
     thimbleMm,
     formatted: rawMm.toFixed(3),
   };
-}
+};
 
 export interface MicrometerSample {
   id: string;
@@ -50,11 +50,11 @@ class SoundEffects {
   private context: AudioContext | null = null;
   private lastClick = 0;
 
-  playRatchetClick() {
+  playRatchetClick(): void {
     if (performance.now() - this.lastClick < 35) return;
     this.lastClick = performance.now();
-    const AudioContextClass = window.AudioContext;
-    if (!AudioContextClass) return;
+    const AudioContextClass = globalThis.AudioContext;
+    if (typeof AudioContextClass !== "function") return;
     this.context ??= new AudioContextClass();
     const oscillator = this.context.createOscillator();
     const gain = this.context.createGain();
