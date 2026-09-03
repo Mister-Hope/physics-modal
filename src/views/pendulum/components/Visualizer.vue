@@ -21,7 +21,7 @@ interface Props {
 const { state, params, vectors } = defineProps<Props>();
 
 const containerRef = ref<HTMLDivElement>();
-const { width, height } = useElementSize(containerRef);
+const { width } = useElementSize(containerRef);
 
 const pivotX = computed(() => width.value / 2);
 const pivotY = 50;
@@ -94,13 +94,6 @@ const markerColors = computed(() =>
     COLORS.forceGravityComponent,
   ].map((color) => color.replace("#", "")),
 );
-
-const arrowEnd = (
-  baseX: number,
-  baseY: number,
-  deltaX: number,
-  deltaY: number,
-): { x: number; y: number } => ({ x: baseX + deltaX, y: baseY + deltaY });
 </script>
 
 <template>

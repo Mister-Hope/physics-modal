@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import AppButton from "@/components/AppButton.vue";
-import AppSlider from "@/components/AppSlider.vue";
 import Latex from "@/components/Latex.vue";
 
 import type { PendulumConfig } from "../types";

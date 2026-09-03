@@ -1,4 +1,4 @@
-name: Deploy website
+name: Test
 
 on:
   push:
@@ -27,15 +27,8 @@ jobs:
       - name: Install dependencies
         run: pnpm ci
 
-      - name: Run build
-        run: pnpm run build
+      - name: Run Type check
+        run: pnpm type-check
 
-      - name: Deploy website
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: deploy
-          folder: dist
-          single-commit: true
-
-      - name: Trigger Hook
-        run: curl -s "${{ secrets.BT_WEBHOOK_URL }}"
+      - name: Run linter
+        run: pnpm lint

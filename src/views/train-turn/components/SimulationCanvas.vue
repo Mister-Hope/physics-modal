@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener, watchImmediate } from "@vueuse/core";
-import { ref, watch } from "vue";
+import { ref } from "vue";
 
 import type { PhysicsResult, SimulationState } from "../types";
 
@@ -13,8 +13,6 @@ interface Props {
 const { state, physics, darkMode = false } = defineProps<Props>();
 
 const canvasRef = ref<HTMLCanvasElement>();
-const animationRef: number | null = null;
-
 const draw = (): void => {
   const canvas = canvasRef.value;
   if (!canvas) return;

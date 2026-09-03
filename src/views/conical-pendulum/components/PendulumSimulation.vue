@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useEventListener, useMounted, useRafFn } from "@vueuse/core";
+import { useEventListener, useRafFn } from "@vueuse/core";
 import { ref } from "vue";
 
 import { GRAVITY } from "../constants";
@@ -18,7 +18,6 @@ const canvasRef = ref<HTMLCanvasElement>();
 const isDragging = ref(false);
 const lastMousePos = ref({ x: 0, y: 0 });
 
-const animationRef: number | null = null;
 let timeAccum = 0;
 let lastFrameTime = 0;
 
@@ -342,10 +341,6 @@ const onMouseMove = (event: MouseEvent): void => {
 const onMouseUp = (): void => {
   isDragging.value = false;
 };
-
-useMounted(() => {
-  handleResize();
-});
 </script>
 
 <template>

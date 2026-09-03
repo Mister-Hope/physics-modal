@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type * as THREE from "three";
 import { onBeforeUnmount, onMounted, ref, nextTick } from "vue";
 
 import Copyright from "@/components/Copyright.vue";
@@ -14,15 +15,17 @@ const containerRef = ref<HTMLDivElement | null>(null);
 // ============================================================
 // Lazy-load Three.js
 // ============================================================
-let THREE: typeof import("three") | null = null;
-let OrbitControls: new (...args: unknown[]) => unknown | null = null;
+let three!: typeof import("three");
+let OrbitControls:
+  | typeof import("three/examples/jsm/controls/OrbitControls.js").OrbitControls
+  | null = null;
 
 const loadThree = async (): Promise<void> => {
   const [threeModule, orbitModule] = await Promise.all([
     import("three"),
     import("three/examples/jsm/controls/OrbitControls.js"),
   ]);
-  THREE = threeModule;
+  three = threeModule;
   ({ OrbitControls } = orbitModule);
 };
 
@@ -48,17 +51,14 @@ const Physics = {
   k: 8.99,
 
   electricField(
-    point: { distanceTo: (point: unknown) => number; clone: () => unknown },
-    charges: { position: unknown; charge: number }[],
+    point: THREE.Vector3,
+    charges: { position: THREE.Vector3; charge: number }[],
   ): THREE.Vector3 {
-    if (!THREE) return new THREE.Vector3(0, 0, 0);
+    if (!three) return {} as THREE.Vector3;
     // 叠加所有电荷在该点的电场贡献：E = Σ kqᵢ r̂ᵢ / rᵢ²
-    const eField = new THREE.Vector3(0, 0, 0);
+    const eField = new three.Vector3(0, 0, 0);
     for (const charge of charges) {
-      const rVec = new THREE.Vector3().subVectors(
-        point as THREE.Vector3,
-        charge.position as THREE.Vector3,
-      );
+      const rVec = new three.Vector3().subVectors(point, charge.position);
       const dist = rVec.length();
       if (dist < 0.3) continue;
       const magnitude = (this.k * charge.charge) / (dist * dist);
@@ -68,16 +68,11 @@ const Physics = {
     return eField;
   },
 
-  potential(
-    point: { distanceTo: (point: unknown) => number },
-    charges: { position: unknown; charge: number }[],
-  ): number {
+  potential(point: THREE.Vector3, charges: { position: THREE.Vector3; charge: number }[]): number {
     // 叠加所有电荷在该点的电势：V = Σ kqᵢ / rᵢ
     let potential = 0;
     for (const charge of charges) {
-      const dist = (point as { distanceTo: (point: unknown) => number }).distanceTo(
-        charge.position,
-      );
+      const dist = point.distanceTo(charge.position);
       if (dist < 0.2) return charge.charge > 0 ? 1e6 : -1e6;
       potential += (this.k * charge.charge) / dist;
     }
@@ -86,14 +81,14 @@ const Physics = {
 
   // eslint-disable-next-line max-params -- 电场线追踪需要这5个独立参数
   traceFieldLine(
-    startPos: unknown,
-    charges: { position: unknown; charge: number }[],
+    startPos: THREE.Vector3,
+    charges: { position: THREE.Vector3; charge: number }[],
     direction: number,
     maxSteps: number,
     stepSize: number,
-  ): unknown[] {
-    if (!THREE) return [];
-    const points: unknown[] = [];
+  ): THREE.Vector3[] {
+    if (!three) return [];
+    const points: THREE.Vector3[] = [];
     const pos = (startPos as THREE.Vector3).clone();
     points.push(pos.clone());
 
@@ -124,7 +119,7 @@ const Physics = {
 // 全局状态
 // ============================================================
 // 电荷数据（位置、电量）
-const chargeData: { charge: number; position: unknown }[] = [];
+const chargeData: { charge: number; position: THREE.Vector3 }[] = [];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const chargeMeshes: any[] = [];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -172,9 +167,9 @@ const testChargeTrailPoints: unknown[] = [];
 // Setup scene — 被调用者必须在调用者之前定义
 // ============================================================
 const createChargeMaterial = (chargeValue: number): THREE.MeshPhongMaterial | null => {
-  if (!THREE) return null;
+  if (!three) return null;
   if (chargeValue > 0) {
-    return new THREE.MeshPhongMaterial({
+    return new three.MeshPhongMaterial({
       color: 0xdd4444,
       emissive: 0xaa2828,
       specular: 0x888888,
@@ -184,7 +179,7 @@ const createChargeMaterial = (chargeValue: number): THREE.MeshPhongMaterial | nu
     });
   }
   if (chargeValue < 0) {
-    return new THREE.MeshPhongMaterial({
+    return new three.MeshPhongMaterial({
       color: 0x4466dd,
       emissive: 0x2828aa,
       specular: 0x888888,
@@ -193,7 +188,7 @@ const createChargeMaterial = (chargeValue: number): THREE.MeshPhongMaterial | nu
       opacity: 0.92,
     });
   }
-  return new THREE.MeshPhongMaterial({
+  return new three.MeshPhongMaterial({
     color: 0x888888,
     emissive: 0x333333,
     specular: 0x666666,
@@ -204,7 +199,7 @@ const createChargeMaterial = (chargeValue: number): THREE.MeshPhongMaterial | nu
 };
 
 const createChargeLabel = (chargeValue: number): THREE.Sprite | null => {
-  if (!THREE) return null;
+  if (!three) return null;
   // 标签画布：128×128，白色粗体
   const canvas = document.createElement("canvas");
   canvas.width = 128;
@@ -217,36 +212,40 @@ const createChargeLabel = (chargeValue: number): THREE.Sprite | null => {
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#ffffff";
   ctx.fillText(chargeValue > 0 ? "+" : chargeValue < 0 ? "−" : "0", 64, 64);
-  const tex = new THREE.CanvasTexture(canvas);
-  const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
-  const sprite = new THREE.Sprite(spriteMat);
+  const tex = new three.CanvasTexture(canvas);
+  const spriteMat = new three.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new three.Sprite(spriteMat);
   sprite.scale.set(0.6, 0.6, 1);
   return sprite;
 };
 
 const buildChargeMeshes = (): void => {
-  if (!THREE || !scene) return;
+  if (!three || !scene) return;
   chargeMeshes.forEach((mesh) => scene.remove(mesh));
   chargeMeshes.length = 0;
 
-  const chargeGeom = new THREE.SphereGeometry(0.35, 32, 32);
+  const chargeGeom = new three.SphereGeometry(0.35, 32, 32);
 
   for (let i = 0; i < chargeData.length; i++) {
     const charge = chargeData[i];
-    const mesh = new THREE.Mesh(chargeGeom, createChargeMaterial(charge.charge));
+    const material = createChargeMaterial(charge.charge);
+    if (!material) return;
+    const mesh = new three.Mesh(chargeGeom, material);
     mesh.position.copy(charge.position as THREE.Vector3);
     mesh.userData.chargeIndex = i;
     scene.add(mesh);
     chargeMeshes.push(mesh);
 
     const label = createChargeLabel(charge.charge);
-    label.position.set(0, 0, 0);
-    mesh.add(label);
+    if (label) {
+      label.position.set(0, 0, 0);
+      mesh.add(label);
+    }
   }
 };
 
 const updateChargeMaterials = (): void => {
-  if (!THREE) return;
+  if (!three) return;
   for (let i = 0; i < chargeData.length; i++) {
     chargeMeshes[i].material = createChargeMaterial(chargeData[i].charge);
     // Update label
@@ -262,7 +261,7 @@ const updateChargeMaterials = (): void => {
 // Field lines
 // ============================================================
 const buildFieldLines = (): void => {
-  if (!THREE || !scene || !fieldLineGroup || !arrowGroup) return;
+  if (!three || !scene || !fieldLineGroup || !arrowGroup) return;
   // Dispose old
   while (fieldLineGroup.children.length > 0) {
     const [child] = fieldLineGroup.children;
@@ -303,7 +302,7 @@ const buildFieldLines = (): void => {
       const theta = goldenAngle * i;
 
       const chargePos = startCharge.position as THREE.Vector3;
-      const startPos = new THREE.Vector3(
+      const startPos = new three.Vector3(
         chargePos.x + startRadius * radiusAtY * Math.cos(theta),
         chargePos.y + startRadius * y,
         chargePos.z + startRadius * radiusAtY * Math.sin(theta),
@@ -311,22 +310,22 @@ const buildFieldLines = (): void => {
 
       const points = Physics.traceFieldLine(startPos, chargeData, lineDir, 500, 0.12);
       if (points.length < 2) continue;
-      const curve = new THREE.CatmullRomCurve3(points as THREE.Vector3[]);
+      const curve = new three.CatmullRomCurve3(points as THREE.Vector3[]);
       const tubePoints = curve.getPoints(Math.min(points.length * 2, 200));
-      const geometry = new THREE.BufferGeometry().setFromPoints(tubePoints);
+      const geometry = new three.BufferGeometry().setFromPoints(tubePoints);
       const colors: number[] = [];
       for (const tubePoint of tubePoints) {
         const eField = Physics.electricField(tubePoint, chargeData);
         const mag = Math.min(eField.length() / 5, 1);
         colors.push(0.3 + mag * 0.7, 0.5 + mag * 0.3, 1 - mag * 0.3);
       }
-      geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-      const material = new THREE.LineBasicMaterial({
+      geometry.setAttribute("color", new three.Float32BufferAttribute(colors, 3));
+      const material = new three.LineBasicMaterial({
         vertexColors: true,
         transparent: true,
         opacity: 0.8,
       });
-      fieldLineGroup.add(new THREE.Line(geometry, material));
+      fieldLineGroup.add(new three.Line(geometry, material));
 
       if (showArrows && tubePoints.length > 4) {
         const arrowSpacing = Math.max(Math.floor(tubePoints.length / 4), 3);
@@ -337,17 +336,17 @@ const buildFieldLines = (): void => {
         ) {
           const pos = tubePoints[arrowIdx];
           const nextPos = tubePoints[Math.min(arrowIdx + 1, tubePoints.length - 1)];
-          const arrowDir = new THREE.Vector3().subVectors(nextPos, pos).normalize();
-          const arrowGeom = new THREE.ConeGeometry(0.06, 0.18, 4);
-          const arrowMat = new THREE.MeshBasicMaterial({
+          const arrowDir = new three.Vector3().subVectors(nextPos, pos).normalize();
+          const arrowGeom = new three.ConeGeometry(0.06, 0.18, 4);
+          const arrowMat = new three.MeshBasicMaterial({
             color: 0xaaccff,
             transparent: true,
             opacity: 0.7,
           });
-          const arrow = new THREE.Mesh(arrowGeom, arrowMat);
+          const arrow = new three.Mesh(arrowGeom, arrowMat);
           arrow.position.copy(pos);
           arrow.quaternion.copy(
-            new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), arrowDir),
+            new three.Quaternion().setFromUnitVectors(new three.Vector3(0, 1, 0), arrowDir),
           );
           arrowGroup.add(arrow);
         }
@@ -368,14 +367,14 @@ const marchingCubes = (
   extent: number,
   step: number,
 ): void => {
-  if (!THREE) return;
+  if (!three) return;
   // 3D 标量场（电势值）
   const size = gridSize + 1;
   const field = new Float32Array(size * size * size);
   for (let ix = 0; ix < size; ix++) {
     for (let iy = 0; iy < size; iy++) {
       for (let iz = 0; iz < size; iz++) {
-        const point = new THREE.Vector3(
+        const point = new three.Vector3(
           -extent + ix * step,
           -extent + iy * step,
           -extent + iz * step,
@@ -394,7 +393,7 @@ const marchingCubes = (
 
   // 获取网格点 (ix, iy, iz) 的空间坐标
   const getPos = (ix: number, iy: number, iz: number): THREE.Vector3 =>
-    new THREE.Vector3(-extent + ix * step, -extent + iy * step, -extent + iz * step);
+    new three.Vector3(-extent + ix * step, -extent + iy * step, -extent + iz * step);
 
   // 线性插值：在 point1(v1) 和 point2(v2) 之间找到等值点
   const interpolate = (
@@ -407,7 +406,7 @@ const marchingCubes = (
     if (Math.abs(isoVal - v2) < 1e-10) return point2.clone();
     if (Math.abs(v1 - v2) < 1e-10) return point1.clone();
     const frac = (isoVal - v1) / (v2 - v1);
-    return new THREE.Vector3(
+    return new three.Vector3(
       point1.x + frac * (point2.x - point1.x),
       point1.y + frac * (point2.y - point1.y),
       point1.z + frac * (point2.z - point1.z),
@@ -489,7 +488,7 @@ const marchingCubes = (
 // Equipotential surfaces
 // ============================================================
 const buildEquipotentialSurfaces = (): void => {
-  if (!THREE || !scene || !equipGroup) return;
+  if (!three || !scene || !equipGroup) return;
   while (equipGroup.children.length > 0) {
     const [child] = equipGroup.children;
     equipGroup.remove(child);
@@ -510,7 +509,7 @@ const buildEquipotentialSurfaces = (): void => {
         const x = -extent + ix * step;
         const y = -extent + iy * step;
         const z = -extent + iz * step;
-        const point = new THREE.Vector3(x, y, z);
+        const point = new three.Vector3(x, y, z);
         let tooClose = false;
         for (const charge of chargeData) {
           if (point.distanceTo(charge.position as THREE.Vector3) < 0.8) {
@@ -542,24 +541,24 @@ const buildEquipotentialSurfaces = (): void => {
     const vertices: number[] = [];
     marchingCubes(vertices, isoVal, gridSize, extent, step);
     if (vertices.length < 9) continue;
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+    const geom = new three.BufferGeometry();
+    geom.setAttribute("position", new three.Float32BufferAttribute(vertices, 3));
     geom.computeVertexNormals();
     let color: THREE.Color;
-    if (isoVal > 0.1) color = new THREE.Color().setHSL(0, 0.7, 0.5);
-    else if (isoVal < -0.1) color = new THREE.Color().setHSL(0.6, 0.7, 0.5);
-    else color = new THREE.Color().setHSL(0.3, 0.5, 0.5);
-    const mat = new THREE.MeshPhongMaterial({
+    if (isoVal > 0.1) color = new three.Color().setHSL(0, 0.7, 0.5);
+    else if (isoVal < -0.1) color = new three.Color().setHSL(0.6, 0.7, 0.5);
+    else color = new three.Color().setHSL(0.3, 0.5, 0.5);
+    const mat = new three.MeshPhongMaterial({
       color,
       emissive: color.clone().multiplyScalar(0.15),
       transparent: true,
       opacity: equipOpacity,
-      side: THREE.DoubleSide,
+      side: three.DoubleSide,
       depthWrite: false,
       shininess: 30,
       specular: 0x222244,
     });
-    equipGroup.add(new THREE.Mesh(geom, mat));
+    equipGroup.add(new three.Mesh(geom, mat));
   }
 };
 
@@ -572,9 +571,9 @@ const rebuildAll = (): void => {
 // Pointer events
 // ============================================================
 const getMouseNDC = (event: PointerEvent): THREE.Vector2 | undefined => {
-  if (!THREE || !renderer) return;
+  if (!three || !renderer) return;
   const rect = renderer.domElement.getBoundingClientRect();
-  const mouse = new THREE.Vector2(
+  const mouse = new three.Vector2(
     ((event.clientX - rect.left) / rect.width) * 2 - 1,
     -((event.clientY - rect.top) / rect.height) * 2 + 1,
   );
@@ -585,7 +584,7 @@ const getMouseNDC = (event: PointerEvent): THREE.Vector2 | undefined => {
 // Test charge — 必须在指针事件之前定义
 // ============================================================
 const clearTestCharge = (): void => {
-  if (!THREE || !scene) return;
+  if (!three || !scene) return;
   if (testChargeMesh) {
     scene.remove(testChargeMesh);
     testChargeMesh.geometry.dispose();
@@ -605,33 +604,33 @@ const clearTestCharge = (): void => {
 };
 
 const placeTestChargeAt = (position: unknown): void => {
-  if (!THREE || !scene) return;
+  if (!three || !scene) return;
   clearTestCharge();
   testChargeData = { charge: testChargeQ, position: (position as THREE.Vector3).clone() };
-  testChargeVelocity = new THREE.Vector3(0, 0, 0);
+  testChargeVelocity = new three.Vector3(0, 0, 0);
   testChargeTrailPoints.length = 0;
   testChargeTrailPoints.push((position as THREE.Vector3).clone());
 
   // 试探电荷球体半径 0.2
-  const geom = new THREE.SphereGeometry(0.2, 16, 16);
+  const geom = new three.SphereGeometry(0.2, 16, 16);
   const color = testChargeQ > 0 ? 0xff8844 : testChargeQ < 0 ? 0x44aaff : 0xaaaaaa;
-  const mat = new THREE.MeshPhongMaterial({
+  const mat = new three.MeshPhongMaterial({
     color,
     emissive: testChargeQ > 0 ? 0x663311 : 0x113366,
     transparent: true,
     opacity: 0.9,
   });
-  testChargeMesh = new THREE.Mesh(geom, mat);
+  testChargeMesh = new three.Mesh(geom, mat);
   testChargeMesh.position.copy(position as THREE.Vector3);
   scene.add(testChargeMesh);
 
-  const trailGeom = new THREE.BufferGeometry().setFromPoints([position as THREE.Vector3]);
-  const trailMat = new THREE.LineBasicMaterial({
+  const trailGeom = new three.BufferGeometry().setFromPoints([position as THREE.Vector3]);
+  const trailMat = new three.LineBasicMaterial({
     color: 0xffaa44,
     transparent: true,
     opacity: 0.7,
   });
-  testChargeTrail = new THREE.Line(trailGeom, trailMat);
+  testChargeTrail = new three.Line(trailGeom, trailMat);
   scene.add(testChargeTrail);
   testChargeActive = true;
 };
@@ -640,15 +639,15 @@ const placeTestChargeAt = (position: unknown): void => {
 // Pointer events
 // ============================================================
 const onPointerDown = (event: PointerEvent): void => {
-  if (!THREE || !renderer || !camera) return;
-  const raycaster = new THREE.Raycaster();
-  const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  if (!three || !renderer || !camera) return;
+  const raycaster = new three.Raycaster();
+  const dragPlane = new three.Plane(new three.Vector3(0, 1, 0), 0);
 
   if (placingTestCharge) {
     const mouse = getMouseNDC(event);
     if (!mouse) return;
     raycaster.setFromCamera(mouse, camera);
-    const intersection = new THREE.Vector3();
+    const intersection = new three.Vector3();
     raycaster.ray.intersectPlane(dragPlane, intersection);
     if (intersection) {
       placeTestChargeAt(intersection);
@@ -665,23 +664,23 @@ const onPointerDown = (event: PointerEvent): void => {
     isDraggingCharge = true;
     draggedCharge = intersects[0].object;
     if (orbitControls) orbitControls.enabled = false;
-    const intersection = new THREE.Vector3();
+    const intersection = new three.Vector3();
     raycaster.ray.intersectPlane(dragPlane, intersection);
     (draggedCharge as { userData: { dragOffset: THREE.Vector3 } }).userData.dragOffset =
-      new THREE.Vector3().subVectors((draggedCharge as THREE.Object3D).position, intersection);
+      new three.Vector3().subVectors((draggedCharge as THREE.Object3D).position, intersection);
   }
 };
 
 const onPointerMove = (event: PointerEvent): void => {
-  if (!THREE || !camera) return;
-  const raycaster = new THREE.Raycaster();
-  const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  if (!three || !camera) return;
+  const raycaster = new three.Raycaster();
+  const dragPlane = new three.Plane(new three.Vector3(0, 1, 0), 0);
 
   if (isDraggingCharge && draggedCharge) {
     const mouse = getMouseNDC(event);
     if (!mouse) return;
     raycaster.setFromCamera(mouse, camera);
-    const intersection = new THREE.Vector3();
+    const intersection = new three.Vector3();
     raycaster.ray.intersectPlane(dragPlane, intersection);
     if (intersection) {
       const offset = (draggedCharge as { userData: { dragOffset: THREE.Vector3 } }).userData
@@ -708,7 +707,7 @@ const onPointerUp = (_event: PointerEvent): void => {
 // Test charge — 物理更新
 // ============================================================
 const updateTestCharge = (dt: number): void => {
-  if (!THREE || !testChargeActive || !testChargeData) return;
+  if (!three || !testChargeActive || !testChargeData) return;
   const eField = Physics.electricField(testChargeData.position, chargeData);
   const force = eField.multiplyScalar(testChargeData.charge);
   const mass = 1;
@@ -738,7 +737,7 @@ const updateTestCharge = (dt: number): void => {
   if (testChargeTrailPoints.length > 2000) testChargeTrailPoints.shift();
   if (testChargeTrail) {
     testChargeTrail.geometry.dispose();
-    testChargeTrail.geometry = new THREE.BufferGeometry().setFromPoints(
+    testChargeTrail.geometry = new three.BufferGeometry().setFromPoints(
       testChargeTrailPoints as THREE.Vector3[],
     );
   }
@@ -751,7 +750,7 @@ const clock = { getDelta: (): number => 0 };
 
 const animate = (): void => {
   animFrame = requestAnimationFrame(animate);
-  if (!THREE || !renderer || !scene || !camera) return;
+  if (!three || !renderer || !scene || !camera) return;
 
   const dt = Math.min(clock.getDelta ? clock.getDelta() : 0, 0.05);
 
@@ -781,7 +780,7 @@ const animate = (): void => {
 // ============================================================
 const initScene = async (): Promise<void> => {
   await loadThree();
-  if (!THREE || !containerRef.value) return;
+  if (!three || !containerRef.value) return;
 
   // Clock
   const { Clock } = await import("three");
@@ -789,11 +788,11 @@ const initScene = async (): Promise<void> => {
   clock.getDelta = (): number => realClock.getDelta();
 
   // Scene
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b111a);
+  scene = new three.Scene();
+  scene.background = new three.Color(0x0b111a);
 
   // Camera
-  camera = new THREE.PerspectiveCamera(
+  camera = new three.PerspectiveCamera(
     55,
     containerRef.value.clientWidth / containerRef.value.clientHeight,
     0.1,
@@ -803,7 +802,7 @@ const initScene = async (): Promise<void> => {
   camera.lookAt(0, 0, 0);
 
   // Renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer = new three.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(containerRef.value.clientWidth, containerRef.value.clientHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   containerRef.value.append(renderer.domElement);
@@ -818,31 +817,31 @@ const initScene = async (): Promise<void> => {
   }
 
   // Lights
-  scene.add(new THREE.AmbientLight(0x8899aa, 0.9));
-  const dirLight = new THREE.DirectionalLight(0xaabbff, 0.8);
+  scene.add(new three.AmbientLight(0x8899aa, 0.9));
+  const dirLight = new three.DirectionalLight(0xaabbff, 0.8);
   dirLight.position.set(5, 10, 7);
   scene.add(dirLight);
-  const pointLight = new THREE.PointLight(0x5577cc, 0.4, 90);
+  const pointLight = new three.PointLight(0x5577cc, 0.4, 90);
   pointLight.position.set(-15, 15, -15);
   scene.add(pointLight);
 
   // Grid
-  const gridHelper = new THREE.GridHelper(60, 60, 0x1a2844, 0x0f1a2e);
+  const gridHelper = new three.GridHelper(60, 60, 0x1a2844, 0x0f1a2e);
   gridHelper.position.y = -0.01;
   scene.add(gridHelper);
 
   // Groups
-  fieldLineGroup = new THREE.Group();
+  fieldLineGroup = new three.Group();
   scene.add(fieldLineGroup);
-  arrowGroup = new THREE.Group();
+  arrowGroup = new three.Group();
   scene.add(arrowGroup);
-  equipGroup = new THREE.Group();
+  equipGroup = new three.Group();
   scene.add(equipGroup);
 
   // Charges
   chargeData.push(
-    { charge: 5, position: new THREE.Vector3(-3, 0, 0) },
-    { charge: -5, position: new THREE.Vector3(3, 0, 0) },
+    { charge: 5, position: new three.Vector3(-3, 0, 0) },
+    { charge: -5, position: new three.Vector3(3, 0, 0) },
   );
   buildChargeMeshes();
   rebuildAll();
@@ -857,7 +856,7 @@ const initScene = async (): Promise<void> => {
 };
 
 const onResize = (): void => {
-  if (!THREE || !camera || !renderer || !containerRef.value) return;
+  if (!three || !camera || !renderer || !containerRef.value) return;
   camera.aspect = containerRef.value.clientWidth / containerRef.value.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(containerRef.value.clientWidth, containerRef.value.clientHeight);

@@ -1,11 +1,9 @@
 <script setup lang="ts" generic="T extends string">
-interface Props {
+const { disabled = false } = defineProps<{
   modelValue: T;
   options: { value: T; label: string }[];
   disabled?: boolean;
-}
-
-const { disabled = false } = defineProps<Props>();
+}>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: T];

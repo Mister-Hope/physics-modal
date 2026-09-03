@@ -32,9 +32,9 @@ const utXXRef = ref<HTMLCanvasElement | null>(null);
 // ============================================================
 // Lazy-load Three.js
 // ============================================================
-let THREE: typeof import("three") | null = null;
+let THREE!: typeof import("three");
 type OrbitControlsConstructor = new (camera: Camera, domElement: HTMLElement) => OrbitControls;
-let OrbitControlsCtor: OrbitControlsConstructor | null = null;
+let OrbitControlsCtor!: OrbitControlsConstructor;
 
 const loadThree = async (): Promise<void> => {
   const [threeModule, orbitModule] = await Promise.all([
@@ -81,7 +81,6 @@ const YY_DEFLECTION_SENSITIVITY = 0.085021;
 const INITIAL_VELOCITY_X = 6;
 const SPAWN_INTERVAL = 1;
 const TRAIL_LENGTH = 24;
-const SCAN_PERIOD = 180;
 const SIGNAL_PERIOD = 180;
 
 interface Section {
@@ -120,7 +119,6 @@ interface Impact {
 // Physics state (Adjustable parameters)
 // ============================================================
 const persistence = ref(90);
-const persistenceVal = ref("90帧");
 const isPaused = ref(false);
 
 const cYMode = ref(0); // 0: 固定, 1: 正弦, 2: 锯齿, 3: 方波
@@ -157,16 +155,10 @@ const getVoltageX = (phase: number): number => {
   return 0;
 };
 
-const curSc = 11;
 let gPhase = 0;
 let spawnT = 0;
 let electrons: EState[] = [];
 let impacts: Impact[] = [];
-
-const clearBeam = (): void => {
-  electrons = [];
-  impacts = [];
-};
 
 // ============================================================
 // Build 3D tube geometry
@@ -439,14 +431,16 @@ const buildPlates = (): void => {
   const plateHeight = YY_PLATE_END - YY_PLATE_START;
   const plateDepth = 2;
   const yGeom = new THREE.BoxGeometry(plateHeight, plateDepth, plateWidth);
-  plateYY_top = new THREE.Mesh(yGeom, createPlateMaterial(0));
+  const neutralMaterial = createPlateMaterial(0);
+  if (!neutralMaterial) return;
+  plateYY_top = new THREE.Mesh(yGeom, neutralMaterial);
   plateYY_top.position.set((YY_PLATE_START + YY_PLATE_END) / 2, PLATE_GAP, 0);
-  plateYY_bot = new THREE.Mesh(yGeom, createPlateMaterial(0));
+  plateYY_bot = new THREE.Mesh(yGeom, neutralMaterial.clone());
   plateYY_bot.position.set((YY_PLATE_START + YY_PLATE_END) / 2, -PLATE_GAP, 0);
   const xGeom = new THREE.BoxGeometry(XX_PLATE_END - XX_PLATE_START, plateWidth, plateDepth);
-  plateXX_left = new THREE.Mesh(xGeom, createPlateMaterial(0));
+  plateXX_left = new THREE.Mesh(xGeom, neutralMaterial.clone());
   plateXX_left.position.set((XX_PLATE_START + XX_PLATE_END) / 2, 0, -PLATE_GAP);
-  plateXX_right = new THREE.Mesh(xGeom, createPlateMaterial(0));
+  plateXX_right = new THREE.Mesh(xGeom, neutralMaterial.clone());
   plateXX_right.position.set((XX_PLATE_START + XX_PLATE_END) / 2, 0, PLATE_GAP);
 };
 
@@ -544,7 +538,15 @@ const initBeamMaterials = (): void => {
 };
 
 const updateBeamGroup = (): void => {
-  if (!THREE || !beamGroup) return;
+  if (
+    !THREE ||
+    !beamGroup ||
+    !beamGlowMat ||
+    !beamCoreMat ||
+    !beamCoreSphereGeom ||
+    !beamCoreSphereMat
+  )
+    return;
   // Dispose old children properly
   for (const child of beamGroup.children) {
     if (child instanceof THREE.Line || child instanceof THREE.Mesh) {
@@ -886,12 +888,12 @@ const initScene = async (): Promise<void> => {
   buildPlates();
   if (plateYY_top) {
     scene.add(plateYY_top);
-    scene.add(plateYY_bot);
   }
+  if (plateYY_bot) scene.add(plateYY_bot);
   if (plateXX_left) {
     scene.add(plateXX_left);
-    scene.add(plateXX_right);
   }
+  if (plateXX_right) scene.add(plateXX_right);
 
   const gun = buildGunMesh();
   if (gun) scene.add(gun);
