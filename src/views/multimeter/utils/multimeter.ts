@@ -221,17 +221,16 @@ export const calculateReading = (gear: Gear, deflection: number): ReadingDetail 
       };
     }
 
-    // Standard high school multimeter Rmid = 15
-    const Rmid = 15;
-    const rawR = Rmid * (1 / clampedU - 1);
-
-    // Formatting scale reading according to density
-    let scaleStr: string;
-    if (rawR >= 100) scaleStr = Math.round(rawR).toString();
-    else if (rawR >= 20) scaleStr = (Math.round(rawR * 2) / 2).toFixed(1);
-    else scaleStr = rawR.toFixed(1);
-
-    const scaleNum = Number(scaleStr);
+    // 欧姆表是非均匀刻度：只读指针对应的实际刻度，不再向下一位估读。
+    const rawR = 15 * (1 / clampedU - 1);
+    const ohmScaleValues = [
+      0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 25, 30, 35,
+      40, 45, 50, 60, 70, 80, 90, 100, 150, 200, 300, 400, 500, 1000,
+    ];
+    const scaleNum = ohmScaleValues.reduce((nearest, value) =>
+      Math.abs(value - rawR) < Math.abs(nearest - rawR) ? value : nearest,
+    );
+    const scaleStr = Number.isInteger(scaleNum) ? scaleNum.toString() : scaleNum.toFixed(1);
     const finalVal = scaleNum * mult;
     const finalStr =
       finalVal >= 1000 ? `${(finalVal / 1000).toFixed(2)} k` : `${finalVal.toFixed(1)} `;
@@ -268,31 +267,27 @@ export const calculateReading = (gear: Gear, deflection: number): ReadingDetail 
 
     if (gear.scaleType === "linear_250") {
       // Scale 0~250
-      // 50 divisions, min division = 5.
-      // Estimation rule:
-      // In 250V/250mA range: min division is 5, estimate to 1 (1V / 1mA).
-      // In 2.5V/2.5mA range: min division is 0.05, estimate to 0.01 (1/5 division).
-      // In 25mA range: min division is 0.5, estimate to 0.1.
+      // 分度值不是 1、0.1 或 0.01 时不估读，直接读到当前分度值。
       const val250 = clampedU * 250;
-      const reading250 = Math.round(val250 * 2) / 2; // e.g. 162.5 or 162
-      const reading250Str = reading250.toFixed(1);
+      const reading250 = Math.round(val250 / 5) * 5;
+      const reading250Str = reading250.toString();
 
       let realVal = 0;
       let finalStr = "";
       let formula = "";
 
       if (range === 250) {
-        realVal = Math.round(val250);
+        realVal = reading250;
         finalStr = realVal.toString();
-        formula = `直读 0~250 刻度线：分度值为 5 ${unit}，估读到 1 ${unit}，读数为 ${finalStr} ${unit}`;
+        formula = `直读 0~250 刻度线：分度值为 5 ${unit}，不估读，读数为 ${finalStr} ${unit}`;
       } else if (range === 25) {
-        realVal = Math.round(val250) / 10;
+        realVal = reading250 / 10;
         finalStr = realVal.toFixed(1);
-        formula = `看 0~250 刻度线读数 ${Math.round(val250)}，换算：${Math.round(val250)} ÷ 10 = ${finalStr} ${unit}`;
+        formula = `看 0~250 刻度线读数 ${reading250}，换算：${reading250} ÷ 10 = ${finalStr} ${unit}（分度值 0.5 ${unit}，不估读）`;
       } else if (range === 2.5) {
-        realVal = Math.round(val250) / 100;
+        realVal = reading250 / 100;
         finalStr = realVal.toFixed(2);
-        formula = `看 0~250 刻度线读数 ${Math.round(val250)}，换算：${Math.round(val250)} ÷ 100 = ${finalStr} ${unit}（分度值 0.05${unit}，估读到百分位）`;
+        formula = `看 0~250 刻度线读数 ${reading250}，换算：${reading250} ÷ 100 = ${finalStr} ${unit}（分度值 0.05 ${unit}，不估读）`;
       }
 
       return {
@@ -326,15 +321,15 @@ export const calculateReading = (gear: Gear, deflection: number): ReadingDetail 
 
     if (gear.scaleType === "linear_10") {
       // Scale 0~10: 50 divisions, min division = 0.2.
-      // Estimation rule: 1/5 or 1/2 estimation -> 2 decimal places (e.g. 6.42 V or 6.40 V)
+      // 分度值为 0.2，不是 1、0.1 或 0.01，不估读，直接读当前分度值。
       const val10 = clampedU * 10;
-      const reading10 = (Math.round(val10 * 50) / 50).toFixed(2);
+      const reading10 = (Math.round(val10 * 5) / 5).toFixed(1);
       return {
         rawDeflection: clampedU,
         gear,
         scaleUsed: "第二排直流 0~10 刻度线（共 50 小格，分度值为 0.2）",
         scaleReading: reading10,
-        calculationFormula: `直读 0~10 刻度线：每小格 0.2 ${unit}，估读到小数点后两位，读数为 ${reading10} ${unit}`,
+        calculationFormula: `直读 0~10 刻度线：每小格 0.2 ${unit}，不估读，读数为 ${reading10} ${unit}`,
         finalValueString: reading10,
         unit,
         accuracyNote: `量程为 10 ${unit}，分度值 0.2 ${unit}。`,
@@ -347,13 +342,14 @@ export const calculateReading = (gear: Gear, deflection: number): ReadingDetail 
     if (gear.id === "acv_10") {
       // Dedicated ~10V scale (accounting for diode non-linearity at low voltages)
       const val10 = clampedU * 10;
-      const reading10 = (Math.round(val10 * 20) / 20).toFixed(2);
+      // 专用刻度每小格 0.1 V，分度值为 0.1，估读到下一位（百分位）。
+      const reading10 = (Math.round(val10 * 100) / 100).toFixed(2);
       return {
         rawDeflection: clampedU,
         gear,
         scaleUsed: "第三排红色专用交流 10V~ 刻度线",
         scaleReading: reading10,
-        calculationFormula: `直读专用交流 10V~ 刻度线：读数为 ${reading10} V`,
+        calculationFormula: `直读专用交流 10V~ 刻度线：每小格 0.1 V，估读到百分位，读数为 ${reading10} V`,
         finalValueString: reading10,
         unit: "V",
         accuracyNote: "由于整流二极管正向导通特性的非线性，交流 10V 档必须读取专用刻度线。",

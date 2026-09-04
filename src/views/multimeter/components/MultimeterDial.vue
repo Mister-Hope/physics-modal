@@ -65,6 +65,7 @@ const ohmSubValues = [
 const ohmMinorTicks = ohmSubValues.map((resistance) => ({
   value: resistance,
   position: 15 / (15 + resistance),
+  isIntegerTick: Number.isInteger(resistance) && resistance >= 1 && resistance <= 4,
 }));
 
 // -------------------------------------------------------------
@@ -329,10 +330,20 @@ const activeScaleHighlight = computed(() => {
           <line
             :x1="polarToCartesian(OHM_RADIUS, START_ANGLE + tick.position * SWEEP).x"
             :y1="polarToCartesian(OHM_RADIUS, START_ANGLE + tick.position * SWEEP).y"
-            :x2="polarToCartesian(OHM_RADIUS + 5, START_ANGLE + tick.position * SWEEP).x"
-            :y2="polarToCartesian(OHM_RADIUS + 5, START_ANGLE + tick.position * SWEEP).y"
             stroke="#dc2626"
-            stroke-width="1"
+            :x2="
+              polarToCartesian(
+                OHM_RADIUS + (tick.isIntegerTick ? 9 : 5),
+                START_ANGLE + tick.position * SWEEP,
+              ).x
+            "
+            :y2="
+              polarToCartesian(
+                OHM_RADIUS + (tick.isIntegerTick ? 9 : 5),
+                START_ANGLE + tick.position * SWEEP,
+              ).y
+            "
+            :stroke-width="tick.isIntegerTick ? '1.4' : '1'"
           />
         </template>
 
