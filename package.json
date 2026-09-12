@@ -31,7 +31,7 @@
     "oxlint-tsgolint": "7.0.2001",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
-    "vite": "8.2.2",
+    "vite": "8.3.0",
     "vite-plugin-static-copy": "4.1.1",
     "vue-tsc": "3.3.11"
   },
