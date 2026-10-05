@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@iconify/vue": "^5.0.1",
-    "@vueuse/core": "^14.4.0",
+    "@vueuse/core": "^15.0.0",
     "three": "^0.185.1",
     "vue": "3.5.42",
     "vue-router": "5.3.0"
