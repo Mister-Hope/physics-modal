@@ -1,10 +1,5 @@
-configDependencies:
-  pacquet: ^0.11.12
-
-enableGlobalVirtualStore: true
-
-minimumReleaseAgeExclude:
-  - "@typescript/*"
-  - typescript
+virtualStoreType: global
 
 trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 720
+trustPolicyExcludePrune: true
