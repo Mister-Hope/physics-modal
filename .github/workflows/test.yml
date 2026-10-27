@@ -19,9 +19,7 @@ jobs:
         with:
           runtime: node@^24.20.0
           cache: true
-
-      - name: Install dependencies
-        run: pnpm ci
+          require-lockfile: true
 
       - name: Run Type check
         run: pnpm type-check
