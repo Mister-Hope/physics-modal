@@ -19,18 +19,6 @@
       "automerge": false,
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["major"]
-    },
-    {
-      "description": "Deliberately pinned toolchain (TS 7 preview, oxc); always review manually.",
-      "automerge": false,
-      "matchPackageNames": [
-        "@mr-hope/tsconfig",
-        "oxc-config-hope",
-        "oxfmt",
-        "oxlint",
-        "oxlint-tsgolint",
-        "typescript"
-      ]
     }
   ],
   "lockFileMaintenance": {
